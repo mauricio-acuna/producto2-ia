@@ -1714,42 +1714,2302 @@ results = hybrid_search(
 };
 
 // Lección 4: Resúmenes Inteligentes
-const IntelligentSummariesLesson = ({ onComplete }) => (
-  <div className="lesson">
-    <h2>📝 Resúmenes Inteligentes</h2>
-    <p>Creación automática de resúmenes de conversaciones...</p>
-    <div className="lesson-actions">
-      <button className="btn btn-primary" onClick={onComplete}>
-        Completado
-      </button>
+const IntelligentSummariesLesson = ({ onComplete }) => {
+  const summarizerCode = `import openai
+from typing import List, Dict, Any, Optional
+from datetime import datetime, timedelta
+import tiktoken
+import re
+
+class IntelligentSummarizer:
+    """Sistema de resúmenes inteligentes para conversaciones largas"""
+    
+    def __init__(self, model: str = "gpt-3.5-turbo", max_tokens: int = 4000):
+        self.client = openai.OpenAI()
+        self.model = model
+        self.max_tokens = max_tokens
+        self.encoding = tiktoken.encoding_for_model(model)
+        
+        # Templates de resúmenes por tipo
+        self.summary_templates = {
+            "conversation": {
+                "system": """Eres un asistente experto en resumir conversaciones. 
+                Crea un resumen conciso pero completo que capture:
+                1. Temas principales discutidos
+                2. Decisiones tomadas
+                3. Tareas asignadas
+                4. Puntos de seguimiento
+                5. Información clave para el contexto futuro""",
+                "max_length": 300
+            },
+            "technical": {
+                "system": """Eres un asistente técnico especializado en resumir 
+                discusiones técnicas. Enfócate en:
+                1. Problemas identificados
+                2. Soluciones propuestas
+                3. Implementaciones realizadas
+                4. Configuraciones importantes
+                5. Próximos pasos técnicos""",
+                "max_length": 400
+            },
+            "meeting": {
+                "system": """Eres un asistente especializado en actas de reuniones.
+                Estructura el resumen con:
+                1. Participantes y roles
+                2. Agenda cubierta
+                3. Decisiones tomadas
+                4. Acciones asignadas con responsables
+                5. Próxima reunión/seguimiento""",
+                "max_length": 350
+            }
+        }
+    
+    def summarize_conversation(self, messages: List[Dict[str, Any]], 
+                             summary_type: str = "conversation",
+                             preserve_entities: bool = True) -> Dict[str, Any]:
+        """Crea un resumen inteligente de una conversación"""
+        
+        # 1. Filtrar y preparar mensajes
+        filtered_messages = self._filter_relevant_messages(messages)
+        
+        # 2. Extraer entidades importantes si se requiere
+        entities = []
+        if preserve_entities:
+            entities = self._extract_entities(filtered_messages)
+        
+        # 3. Verificar límites de tokens
+        conversation_text = self._prepare_conversation_text(filtered_messages)
+        
+        if self._count_tokens(conversation_text) > self.max_tokens:
+            # Usar resumen jerárquico para conversaciones muy largas
+            return self._hierarchical_summarize(filtered_messages, summary_type, entities)
+        else:
+            # Resumen directo
+            return self._direct_summarize(conversation_text, summary_type, entities)
+    
+    def _filter_relevant_messages(self, messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Filtra mensajes relevantes para el resumen"""
+        filtered = []
+        
+        for msg in messages:
+            # Filtrar mensajes del sistema redundantes
+            if msg.get('role') == 'system' and len(msg.get('content', '')) < 50:
+                continue
+                
+            # Filtrar confirmaciones simples
+            content = msg.get('content', '').strip().lower()
+            if content in ['ok', 'sí', 'no', 'gracias', 'entendido', '👍']:
+                continue
+                
+            # Filtrar mensajes muy cortos que no aportan contexto
+            if len(content) < 20:
+                continue
+                
+            filtered.append(msg)
+        
+        return filtered
+    
+    def _extract_entities(self, messages: List[Dict[str, Any]]) -> List[str]:
+        """Extrae entidades importantes de la conversación"""
+        text = " ".join([msg.get('content', '') for msg in messages])
+        
+        # Patrones para extraer entidades
+        patterns = {
+            'emails': r'\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b',
+            'urls': r'https?://(?:[-\\w.])+(?:[:\\d]+)?(?:/(?:[\\w/_.])*(?:\\?(?:[\\w&=%.])*)?(?:#(?:[\\w.])*)?)?',
+            'dates': r'\\b(?:\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}|\\d{2,4}[/-]\\d{1,2}[/-]\\d{1,2})\\b',
+            'times': r'\\b(?:\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s?[AaPp][Mm])?)\\b',
+            'phones': r'\\b(?:\\+?\\d{1,3}[-.\\s]?)?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}\\b',
+            'mentions': r'@\\w+',
+            'hashtags': r'#\\w+',
+            'codes': r'\\b[A-Z]{2,}[-_]?\\d{2,}\\b'
+        }
+        
+        entities = []
+        for entity_type, pattern in patterns.items():
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            entities.extend([(entity_type, match) for match in matches])
+        
+        return list(set(entities))  # Eliminar duplicados
+    
+    def _prepare_conversation_text(self, messages: List[Dict[str, Any]]) -> str:
+        """Prepara el texto de la conversación para resumen"""
+        formatted_messages = []
+        
+        for i, msg in enumerate(messages):
+            role = msg.get('role', 'unknown')
+            content = msg.get('content', '')
+            timestamp = msg.get('timestamp', '')
+            
+            # Formatear según el rol
+            if role == 'user':
+                prefix = f"Usuario ({timestamp}):"
+            elif role == 'assistant':
+                prefix = f"Asistente ({timestamp}):"
+            else:
+                prefix = f"{role.title()} ({timestamp}):"
+            
+            formatted_messages.append(f"{prefix} {content}")
+        
+        return "\\n\\n".join(formatted_messages)
+    
+    def _count_tokens(self, text: str) -> int:
+        """Cuenta tokens en el texto"""
+        return len(self.encoding.encode(text))
+    
+    def _direct_summarize(self, conversation_text: str, 
+                         summary_type: str, entities: List[str]) -> Dict[str, Any]:
+        """Crea resumen directo de la conversación"""
+        template = self.summary_templates.get(summary_type, 
+                                            self.summary_templates["conversation"])
+        
+        # Construir prompt con entidades
+        entities_text = ""
+        if entities:
+            entities_text = f"\\n\\nEntidades importantes a preservar: {', '.join([f'{e[1]} ({e[0]})' for e in entities[:10]])}"
+        
+        messages = [
+            {"role": "system", "content": template["system"] + entities_text},
+            {"role": "user", "content": f"Conversación a resumir:\\n\\n{conversation_text}"}
+        ]
+        
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=template["max_length"],
+                temperature=0.3
+            )
+            
+            summary = response.choices[0].message.content.strip()
+            
+            return {
+                "summary": summary,
+                "type": summary_type,
+                "entities": entities,
+                "method": "direct",
+                "original_length": len(conversation_text),
+                "summary_length": len(summary),
+                "compression_ratio": len(summary) / len(conversation_text),
+                "created_at": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                "error": f"Error al crear resumen: {str(e)}",
+                "summary": "Error en la generación del resumen",
+                "type": summary_type,
+                "method": "direct"
+            }
+    
+    def _hierarchical_summarize(self, messages: List[Dict[str, Any]], 
+                              summary_type: str, entities: List[str]) -> Dict[str, Any]:
+        """Resumen jerárquico para conversaciones muy largas"""
+        
+        # 1. Dividir en chunks
+        chunks = self._split_into_chunks(messages)
+        
+        # 2. Resumir cada chunk
+        chunk_summaries = []
+        for i, chunk in enumerate(chunks):
+            chunk_text = self._prepare_conversation_text(chunk)
+            chunk_summary = self._direct_summarize(
+                chunk_text, 
+                summary_type, 
+                entities
+            )
+            chunk_summaries.append({
+                "chunk_id": i,
+                "summary": chunk_summary.get("summary", ""),
+                "messages_count": len(chunk)
+            })
+        
+        # 3. Crear resumen final de los resúmenes
+        combined_summaries = "\\n\\n".join([
+            f"Sección {cs['chunk_id'] + 1} ({cs['messages_count']} mensajes): {cs['summary']}"
+            for cs in chunk_summaries
+        ])
+        
+        final_summary = self._direct_summarize(
+            combined_summaries, 
+            summary_type, 
+            entities
+        )
+        
+        return {
+            **final_summary,
+            "method": "hierarchical",
+            "chunks_count": len(chunks),
+            "chunk_summaries": chunk_summaries
+        }
+    
+    def _split_into_chunks(self, messages: List[Dict[str, Any]], 
+                          max_chunk_tokens: int = 2000) -> List[List[Dict[str, Any]]]:
+        """Divide mensajes en chunks por límite de tokens"""
+        chunks = []
+        current_chunk = []
+        current_tokens = 0
+        
+        for msg in messages:
+            msg_tokens = self._count_tokens(msg.get('content', ''))
+            
+            if current_tokens + msg_tokens > max_chunk_tokens and current_chunk:
+                chunks.append(current_chunk)
+                current_chunk = [msg]
+                current_tokens = msg_tokens
+            else:
+                current_chunk.append(msg)
+                current_tokens += msg_tokens
+        
+        if current_chunk:
+            chunks.append(current_chunk)
+        
+        return chunks
+
+# Ejemplo de uso del sistema de resúmenes
+summarizer = IntelligentSummarizer()
+
+# Mensajes de ejemplo
+messages = [
+    {
+        "role": "user",
+        "content": "Necesito ayuda para implementar un sistema de autenticación en mi app web",
+        "timestamp": "2024-01-15 10:00:00"
+    },
+    {
+        "role": "assistant", 
+        "content": "Te puedo ayudar. ¿Qué tipo de autenticación prefieres? JWT, OAuth, o sesiones tradicionales?",
+        "timestamp": "2024-01-15 10:00:30"
+    },
+    {
+        "role": "user",
+        "content": "Creo que JWT sería mejor. Es para una API REST con React frontend",
+        "timestamp": "2024-01-15 10:01:00"
+    },
+    {
+        "role": "assistant",
+        "content": "Perfecto. Para JWT necesitarás: 1) Endpoint de login que genere el token, 2) Middleware para validar tokens, 3) Refresh token para renovación. ¿Qué backend usas?",
+        "timestamp": "2024-01-15 10:01:45"
+    }
+]
+
+# Crear resumen técnico
+summary_result = summarizer.summarize_conversation(
+    messages=messages,
+    summary_type="technical",
+    preserve_entities=True
+)
+
+print("Resumen generado:")
+print(f"Tipo: {summary_result['type']}")
+print(f"Método: {summary_result['method']}")
+print(f"Ratio de compresión: {summary_result['compression_ratio']:.2f}")
+print(f"Resumen: {summary_result['summary']}")
+print(f"Entidades: {summary_result['entities']}")`;
+
+  const progressiveSummaryCode = `class ProgressiveSummarizer:
+    """Sistema de resúmenes progresivos que se actualiza incrementalmente"""
+    
+    def __init__(self, base_summarizer: IntelligentSummarizer):
+        self.base_summarizer = base_summarizer
+        self.conversation_summaries = {}  # Cache de resúmenes por conversación
+        
+    def update_summary(self, conversation_id: str, 
+                      new_messages: List[Dict[str, Any]],
+                      update_threshold: int = 10) -> Dict[str, Any]:
+        """Actualiza resumen existente con nuevos mensajes"""
+        
+        # Obtener resumen existente
+        existing_summary = self.conversation_summaries.get(conversation_id)
+        
+        if not existing_summary:
+            # Primera vez - crear resumen completo
+            return self._create_initial_summary(conversation_id, new_messages)
+        
+        # Verificar si necesita actualización
+        if len(new_messages) < update_threshold:
+            # Pocos mensajes nuevos - actualización incremental
+            return self._incremental_update(conversation_id, existing_summary, new_messages)
+        else:
+            # Muchos mensajes nuevos - re-resumir todo
+            return self._full_update(conversation_id, new_messages)
+    
+    def _create_initial_summary(self, conversation_id: str, 
+                              messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Crea el resumen inicial de una conversación"""
+        summary = self.base_summarizer.summarize_conversation(messages)
+        
+        # Cachear el resumen
+        self.conversation_summaries[conversation_id] = {
+            **summary,
+            "message_count": len(messages),
+            "last_update": datetime.now(),
+            "version": 1
+        }
+        
+        return self.conversation_summaries[conversation_id]
+    
+    def _incremental_update(self, conversation_id: str,
+                          existing_summary: Dict[str, Any],
+                          new_messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Actualización incremental con pocos mensajes nuevos"""
+        
+        # Resumir solo los nuevos mensajes
+        new_summary = self.base_summarizer.summarize_conversation(new_messages)
+        
+        # Combinar resúmenes
+        combined_text = f"""
+        Resumen existente: {existing_summary['summary']}
+        
+        Nuevos desarrollos: {new_summary['summary']}
+        """
+        
+        # Crear resumen consolidado
+        consolidated = self.base_summarizer._direct_summarize(
+            combined_text, 
+            existing_summary.get('type', 'conversation'),
+            existing_summary.get('entities', [])
+        )
+        
+        # Actualizar cache
+        updated_summary = {
+            **consolidated,
+            "message_count": existing_summary["message_count"] + len(new_messages),
+            "last_update": datetime.now(),
+            "version": existing_summary["version"] + 1,
+            "update_method": "incremental"
+        }
+        
+        self.conversation_summaries[conversation_id] = updated_summary
+        return updated_summary`;
+
+  const multiModalSummaryCode = `class MultiModalSummarizer:
+    """Resúmenes que incluyen diferentes tipos de contenido"""
+    
+    def __init__(self):
+        self.content_processors = {
+            'text': self._process_text,
+            'code': self._process_code,
+            'image': self._process_image_description,
+            'file': self._process_file_reference,
+            'link': self._process_link_content
+        }
+    
+    def create_rich_summary(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Crea resumen rico incluyendo múltiples tipos de contenido"""
+        
+        # Categorizar contenido por tipo
+        content_by_type = {
+            'text': [],
+            'code': [],
+            'images': [],
+            'files': [],
+            'links': []
+        }
+        
+        for msg in messages:
+            content_type = self._detect_content_type(msg)
+            processed_content = self.content_processors[content_type](msg)
+            content_by_type[content_type].append(processed_content)
+        
+        # Crear resúmenes específicos por tipo
+        summaries = {}
+        for content_type, items in content_by_type.items():
+            if items:
+                summaries[content_type] = self._summarize_by_type(content_type, items)
+        
+        # Combinar en resumen unificado
+        unified_summary = self._create_unified_summary(summaries)
+        
+        return {
+            "unified_summary": unified_summary,
+            "content_breakdown": summaries,
+            "content_stats": {k: len(v) for k, v in content_by_type.items()},
+            "created_at": datetime.now().isoformat()
+        }
+    
+    def _detect_content_type(self, message: Dict[str, Any]) -> str:
+        """Detecta el tipo de contenido del mensaje"""
+        content = message.get('content', '')
+        
+        # Detectar código
+        if '```' in content or message.get('metadata', {}).get('type') == 'code':
+            return 'code'
+        
+        # Detectar referencias a archivos
+        if any(ext in content.lower() for ext in ['.pdf', '.doc', '.txt', '.csv', '.xlsx']):
+            return 'file'
+        
+        # Detectar enlaces
+        if 'http://' in content or 'https://' in content:
+            return 'link'
+        
+        # Detectar descripciones de imágenes
+        if message.get('metadata', {}).get('has_image') or 'imagen' in content.lower():
+            return 'image'
+        
+        return 'text'
+    
+    def _process_code(self, message: Dict[str, Any]) -> Dict[str, Any]:
+        """Procesa contenido de código"""
+        content = message.get('content', '')
+        
+        # Extraer bloques de código
+        code_blocks = re.findall(r'```(?:\\w+)?\\n(.*?)```', content, re.DOTALL)
+        
+        # Detectar lenguaje de programación
+        language = 'unknown'
+        if '```python' in content:
+            language = 'python'
+        elif '```javascript' in content:
+            language = 'javascript'
+        elif '```sql' in content:
+            language = 'sql'
+        
+        return {
+            "type": "code",
+            "language": language,
+            "blocks_count": len(code_blocks),
+            "total_lines": sum(block.count('\\n') for block in code_blocks),
+            "content_preview": code_blocks[0][:200] if code_blocks else "",
+            "timestamp": message.get('timestamp')
+        }`;
+
+  return (
+    <div className="lesson">
+      <h2>📝 Resúmenes Inteligentes</h2>
+      
+      <div className="lesson-intro">
+        <p>
+          Los resúmenes inteligentes son esenciales para gestionar conversaciones largas, 
+          mantener contexto relevante y reducir costos de procesamiento sin perder 
+          información importante.
+        </p>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🎯 ¿Por qué Necesitamos Resúmenes Inteligentes?</h3>
+        
+        <div className="summary-benefits">
+          <div className="benefit-card">
+            <h4>💰 Reducción de Costos</h4>
+            <p>Menor uso de tokens en APIs de LLM</p>
+            <ul>
+              <li>Conversaciones largas → resúmenes concisos</li>
+              <li>Menos tokens = menor costo por request</li>
+              <li>Optimización de recursos computacionales</li>
+            </ul>
+          </div>
+          
+          <div className="benefit-card">
+            <h4>⚡ Mejor Rendimiento</h4>
+            <p>Respuestas más rápidas y eficientes</p>
+            <ul>
+              <li>Menos tiempo de procesamiento</li>
+              <li>Menor latencia en respuestas</li>
+              <li>Mejor experiencia de usuario</li>
+            </ul>
+          </div>
+          
+          <div className="benefit-card">
+            <h4>🎯 Contexto Relevante</h4>
+            <p>Mantiene información clave</p>
+            <ul>
+              <li>Preserva decisiones importantes</li>
+              <li>Conserva entidades mencionadas</li>
+              <li>Elimina ruido conversacional</li>
+            </ul>
+          </div>
+          
+          <div className="benefit-card">
+            <h4>📈 Escalabilidad</h4>
+            <p>Gestiona conversaciones de cualquier tamaño</p>
+            <ul>
+              <li>Resúmenes jerárquicos para chats largos</li>
+              <li>Actualización incremental</li>
+              <li>Compresión inteligente de información</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>💻 Sistema Completo de Resúmenes</h3>
+        <p>
+          Implementemos un sistema robusto que maneja diferentes tipos de conversaciones 
+          y preserva información crítica:
+        </p>
+        
+        <CodeBlock code={summarizerCode} language="python" />
+      </div>
+
+      <div className="lesson-section">
+        <h3>🔄 Resúmenes Progresivos</h3>
+        <p>
+          Para conversaciones en curso, necesitamos un sistema que actualice resúmenes 
+          incrementalmente sin re-procesar toda la conversación:
+        </p>
+        
+        <CodeBlock code={progressiveSummaryCode} language="python" />
+
+        <div className="progressive-strategies">
+          <h4>📊 Estrategias de Actualización</h4>
+          <div className="strategies-comparison">
+            <div className="strategy-option">
+              <h5>🔄 Incremental</h5>
+              <p><strong>Cuándo:</strong> Pocos mensajes nuevos (&lt;10)</p>
+              <ul>
+                <li>✅ Muy eficiente</li>
+                <li>✅ Conserva contexto</li>
+                <li>⚠️ Puede acumular ruido</li>
+              </ul>
+            </div>
+            
+            <div className="strategy-option">
+              <h5>🔃 Completa</h5>
+              <p><strong>Cuándo:</strong> Muchos mensajes nuevos (≥10)</p>
+              <ul>
+                <li>✅ Resumen fresco</li>
+                <li>✅ Elimina información obsoleta</li>
+                <li>⚠️ Más costoso computacionalmente</li>
+              </ul>
+            </div>
+            
+            <div className="strategy-option">
+              <h5>⏰ Temporal</h5>
+              <p><strong>Cuándo:</strong> Intervalos regulares</p>
+              <ul>
+                <li>✅ Predecible</li>
+                <li>✅ Mantiene frescura</li>
+                <li>⚠️ Puede ser innecesario</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🎨 Resúmenes Multi-Modal</h3>
+        <p>
+          Las conversaciones modernas incluyen texto, código, imágenes y archivos. 
+          Nuestro sistema debe manejar todos estos tipos de contenido:
+        </p>
+        
+        <CodeBlock code={multiModalSummaryCode} language="python" />
+
+        <div className="content-types">
+          <h4>📋 Tipos de Contenido Soportados</h4>
+          <div className="content-grid">
+            <div className="content-type">
+              <h5>📝 Texto</h5>
+              <p>Conversación natural, decisiones, conclusiones</p>
+              <div className="processing-method">
+                <strong>Procesamiento:</strong> Análisis semántico, extracción de temas
+              </div>
+            </div>
+            
+            <div className="content-type">
+              <h5>💻 Código</h5>
+              <p>Snippets, funciones, configuraciones</p>
+              <div className="processing-method">
+                <strong>Procesamiento:</strong> Detección de lenguaje, funcionalidad
+              </div>
+            </div>
+            
+            <div className="content-type">
+              <h5>🖼️ Imágenes</h5>
+              <p>Screenshots, diagramas, mockups</p>
+              <div className="processing-method">
+                <strong>Procesamiento:</strong> Descripción visual, elementos clave
+              </div>
+            </div>
+            
+            <div className="content-type">
+              <h5>📎 Archivos</h5>
+              <p>Documentos, PDFs, spreadsheets</p>
+              <div className="processing-method">
+                <strong>Procesamiento:</strong> Metadatos, contenido principal
+              </div>
+            </div>
+            
+            <div className="content-type">
+              <h5>🔗 Enlaces</h5>
+              <p>URLs, referencias externas</p>
+              <div className="processing-method">
+                <strong>Procesamiento:</strong> Contenido web, relevancia
+              </div>
+            </div>
+            
+            <div className="content-type">
+              <h5>📊 Datos</h5>
+              <p>Tablas, métricas, estadísticas</p>
+              <div className="processing-method">
+                <strong>Procesamiento:</strong> Tendencias, insights clave
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>⚙️ Configuración y Personalización</h3>
+        <div className="configuration-options">
+          <div className="config-category">
+            <h4>📏 Longitud de Resúmenes</h4>
+            <div className="config-options">
+              <div className="config-option">
+                <span className="option-name">Breve:</span>
+                <span className="option-value">50-100 palabras</span>
+                <span className="option-use">Para actualizaciones rápidas</span>
+              </div>
+              <div className="config-option">
+                <span className="option-name">Estándar:</span>
+                <span className="option-value">200-300 palabras</span>
+                <span className="option-use">Para la mayoría de casos</span>
+              </div>
+              <div className="config-option">
+                <span className="option-name">Detallado:</span>
+                <span className="option-value">400-500 palabras</span>
+                <span className="option-use">Para conversaciones complejas</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="config-category">
+            <h4>🎯 Nivel de Detalle</h4>
+            <div className="config-options">
+              <div className="config-option">
+                <span className="option-name">Ejecutivo:</span>
+                <span className="option-value">Solo decisiones clave</span>
+                <span className="option-use">Para reportes de alto nivel</span>
+              </div>
+              <div className="config-option">
+                <span className="option-name">Técnico:</span>
+                <span className="option-value">Implementaciones y soluciones</span>
+                <span className="option-use">Para desarrolladores</span>
+              </div>
+              <div className="config-option">
+                <span className="option-name">Completo:</span>
+                <span className="option-value">Todos los aspectos relevantes</span>
+                <span className="option-use">Para documentación</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>📊 Métricas de Calidad</h3>
+        <div className="quality-metrics">
+          <div className="metric-card">
+            <h4>🎯 Cobertura</h4>
+            <p>¿Se capturan todos los temas importantes?</p>
+            <div className="metric-details">
+              <strong>Medición:</strong> Porcentaje de conceptos clave incluidos
+            </div>
+          </div>
+          
+          <div className="metric-card">
+            <h4>📏 Compresión</h4>
+            <p>¿Qué tan eficiente es la reducción de tamaño?</p>
+            <div className="metric-details">
+              <strong>Target:</strong> 70-90% de reducción manteniendo calidad
+            </div>
+          </div>
+          
+          <div className="metric-card">
+            <h4>✅ Precisión</h4>
+            <p>¿La información resumida es correcta?</p>
+            <div className="metric-details">
+              <strong>Validación:</strong> Comparación con ground truth
+            </div>
+          </div>
+          
+          <div className="metric-card">
+            <h4>⚡ Velocidad</h4>
+            <p>¿Qué tan rápido se genera el resumen?</p>
+            <div className="metric-details">
+              <strong>Objetivo:</strong> &lt;5 segundos para conversaciones típicas
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-actions">
+        <button className="btn btn-primary" onClick={onComplete}>
+          Resúmenes Implementados ✓
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Lección 5: Retrieval de Contexto
-const ContextRetrievalLesson = ({ onComplete }) => (
-  <div className="lesson">
-    <h2>🔍 Retrieval de Contexto</h2>
-    <p>Recuperación eficiente de información relevante...</p>
-    <div className="lesson-actions">
-      <button className="btn btn-primary" onClick={onComplete}>
-        Completado
-      </button>
+const ContextRetrievalLesson = ({ onComplete }) => {
+  const contextRetrievalCode = `import numpy as np
+from typing import List, Dict, Any, Optional, Tuple
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+import faiss
+import sqlite3
+from sentence_transformers import SentenceTransformer
+import json
+
+@dataclass
+class ContextWindow:
+    """Representa una ventana de contexto optimizada"""
+    content: str
+    relevance_score: float
+    timestamp: datetime
+    content_type: str
+    tokens: int
+    priority: int = 1
+
+class HybridContextRetriever:
+    """Sistema híbrido de recuperación de contexto"""
+    
+    def __init__(self, max_context_tokens: int = 8000, 
+                 embedding_model: str = "all-MiniLM-L6-v2"):
+        self.max_context_tokens = max_context_tokens
+        self.encoder = SentenceTransformer(embedding_model)
+        
+        # Índice FAISS para búsqueda vectorial rápida
+        self.vector_index = None
+        self.document_store = {}  # Cache de documentos
+        
+        # Base de datos para metadatos
+        self.db_path = "context_retrieval.db"
+        self._init_db()
+        
+        # Configuración de retrieval
+        self.retrieval_strategies = {
+            'semantic': self._semantic_retrieval,
+            'temporal': self._temporal_retrieval,
+            'frequency': self._frequency_retrieval,
+            'hybrid': self._hybrid_retrieval
+        }
+    
+    def _init_db(self):
+        """Inicializa base de datos para metadatos"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS context_entries (
+                    id INTEGER PRIMARY KEY,
+                    content_hash TEXT UNIQUE,
+                    content_type TEXT,
+                    created_at TIMESTAMP,
+                    last_accessed TIMESTAMP,
+                    access_count INTEGER DEFAULT 0,
+                    relevance_score REAL DEFAULT 1.0,
+                    token_count INTEGER,
+                    metadata TEXT
+                )
+            """)
+            
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_content_type ON context_entries(content_type);
+                CREATE INDEX IF NOT EXISTS idx_relevance ON context_entries(relevance_score);
+                CREATE INDEX IF NOT EXISTS idx_access_count ON context_entries(access_count);
+            """)
+    
+    def index_content(self, contents: List[str], 
+                     content_types: List[str] = None,
+                     metadatas: List[Dict[str, Any]] = None):
+        """Indexa contenido para retrieval eficiente"""
+        
+        if not contents:
+            return
+        
+        # Generar embeddings
+        embeddings = self.encoder.encode(contents)
+        
+        # Crear o actualizar índice FAISS
+        if self.vector_index is None:
+            dimension = embeddings.shape[1]
+            self.vector_index = faiss.IndexFlatIP(dimension)  # Inner Product
+        
+        # Normalizar embeddings para cosine similarity
+        faiss.normalize_L2(embeddings)
+        
+        # Agregar al índice
+        start_id = len(self.document_store)
+        self.vector_index.add(embeddings)
+        
+        # Almacenar documentos y metadatos
+        for i, content in enumerate(contents):
+            doc_id = start_id + i
+            content_type = content_types[i] if content_types else "unknown"
+            metadata = metadatas[i] if metadatas else {}
+            
+            self.document_store[doc_id] = {
+                'content': content,
+                'content_type': content_type,
+                'metadata': metadata,
+                'indexed_at': datetime.now(),
+                'token_count': len(content.split())  # Aproximación simple
+            }
+            
+            # Guardar en base de datos
+            self._store_metadata(doc_id, content, content_type, metadata)
+    
+    def retrieve_context(self, query: str, 
+                        strategy: str = "hybrid",
+                        filters: Dict[str, Any] = None,
+                        max_results: int = 10) -> List[ContextWindow]:
+        """Recupera contexto relevante usando la estrategia especificada"""
+        
+        if strategy not in self.retrieval_strategies:
+            raise ValueError(f"Estrategia no soportada: {strategy}")
+        
+        # Aplicar estrategia de retrieval
+        candidates = self.retrieval_strategies[strategy](
+            query, filters, max_results * 2  # Obtener más candidatos
+        )
+        
+        # Optimizar ventana de contexto
+        optimized_context = self._optimize_context_window(candidates)
+        
+        # Actualizar estadísticas de acceso
+        for context in optimized_context:
+            self._update_access_stats(context)
+        
+        return optimized_context[:max_results]
+    
+    def _semantic_retrieval(self, query: str, 
+                           filters: Dict[str, Any] = None,
+                           max_results: int = 20) -> List[ContextWindow]:
+        """Retrieval basado en similitud semántica"""
+        
+        if self.vector_index is None or not self.document_store:
+            return []
+        
+        # Generar embedding de la query
+        query_embedding = self.encoder.encode([query])
+        faiss.normalize_L2(query_embedding)
+        
+        # Buscar documentos similares
+        similarities, indices = self.vector_index.search(
+            query_embedding, 
+            min(max_results, len(self.document_store))
+        )
+        
+        contexts = []
+        for similarity, idx in zip(similarities[0], indices[0]):
+            if idx == -1:  # FAISS retorna -1 para índices inválidos
+                continue
+                
+            doc = self.document_store.get(idx)
+            if doc and self._passes_filters(doc, filters):
+                contexts.append(ContextWindow(
+                    content=doc['content'],
+                    relevance_score=float(similarity),
+                    timestamp=doc['indexed_at'],
+                    content_type=doc['content_type'],
+                    tokens=doc['token_count'],
+                    priority=1
+                ))
+        
+        return contexts
+    
+    def _temporal_retrieval(self, query: str,
+                           filters: Dict[str, Any] = None,
+                           max_results: int = 20) -> List[ContextWindow]:
+        """Retrieval basado en recencia temporal"""
+        
+        # Obtener documentos ordenados por fecha
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("""
+                SELECT content_hash, content_type, created_at, relevance_score, token_count
+                FROM context_entries 
+                ORDER BY created_at DESC 
+                LIMIT ?
+            """, (max_results,))
+            
+            contexts = []
+            for row in cursor.fetchall():
+                # Buscar contenido en document_store
+                for doc_id, doc in self.document_store.items():
+                    if hash(doc['content']) == hash(row[0]):  # Aproximación
+                        if self._passes_filters(doc, filters):
+                            # Calcular score temporal (más reciente = mayor score)
+                            time_diff = datetime.now() - datetime.fromisoformat(row[2])
+                            temporal_score = 1.0 / (1.0 + time_diff.days)
+                            
+                            contexts.append(ContextWindow(
+                                content=doc['content'],
+                                relevance_score=temporal_score,
+                                timestamp=datetime.fromisoformat(row[2]),
+                                content_type=row[1],
+                                tokens=row[4],
+                                priority=2
+                            ))
+                        break
+        
+        return contexts
+    
+    def _frequency_retrieval(self, query: str,
+                            filters: Dict[str, Any] = None,
+                            max_results: int = 20) -> List[ContextWindow]:
+        """Retrieval basado en frecuencia de acceso"""
+        
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("""
+                SELECT content_hash, content_type, created_at, access_count, token_count
+                FROM context_entries 
+                ORDER BY access_count DESC, relevance_score DESC
+                LIMIT ?
+            """, (max_results,))
+            
+            contexts = []
+            for row in cursor.fetchall():
+                for doc_id, doc in self.document_store.items():
+                    if hash(doc['content']) == hash(row[0]):
+                        if self._passes_filters(doc, filters):
+                            # Score basado en frecuencia de acceso
+                            frequency_score = min(row[3] / 100.0, 1.0)  # Normalizar
+                            
+                            contexts.append(ContextWindow(
+                                content=doc['content'],
+                                relevance_score=frequency_score,
+                                timestamp=datetime.fromisoformat(row[2]),
+                                content_type=row[1],
+                                tokens=row[4],
+                                priority=3
+                            ))
+                        break
+        
+        return contexts
+    
+    def _hybrid_retrieval(self, query: str,
+                         filters: Dict[str, Any] = None,
+                         max_results: int = 20) -> List[ContextWindow]:
+        """Combina múltiples estrategias de retrieval"""
+        
+        # Obtener candidatos de diferentes estrategias
+        semantic_contexts = self._semantic_retrieval(query, filters, max_results // 2)
+        temporal_contexts = self._temporal_retrieval(query, filters, max_results // 3)
+        frequency_contexts = self._frequency_retrieval(query, filters, max_results // 3)
+        
+        # Combinar y eliminar duplicados
+        all_contexts = {}
+        
+        # Agregar contextos semánticos (mayor peso)
+        for ctx in semantic_contexts:
+            key = hash(ctx.content)
+            if key not in all_contexts:
+                ctx.relevance_score *= 1.5  # Boost semántico
+                all_contexts[key] = ctx
+        
+        # Agregar contextos temporales
+        for ctx in temporal_contexts:
+            key = hash(ctx.content)
+            if key in all_contexts:
+                # Combinar scores si ya existe
+                existing = all_contexts[key]
+                existing.relevance_score = (existing.relevance_score + ctx.relevance_score) / 2
+            else:
+                ctx.relevance_score *= 1.2  # Boost temporal
+                all_contexts[key] = ctx
+        
+        # Agregar contextos frecuentes
+        for ctx in frequency_contexts:
+            key = hash(ctx.content)
+            if key in all_contexts:
+                existing = all_contexts[key]
+                existing.relevance_score = (existing.relevance_score + ctx.relevance_score) / 2
+            else:
+                all_contexts[key] = ctx
+        
+        # Ordenar por relevancia combinada
+        combined_contexts = list(all_contexts.values())
+        combined_contexts.sort(key=lambda x: x.relevance_score, reverse=True)
+        
+        return combined_contexts
+    
+    def _optimize_context_window(self, contexts: List[ContextWindow]) -> List[ContextWindow]:
+        """Optimiza la ventana de contexto para maximizar relevancia dentro del límite de tokens"""
+        
+        if not contexts:
+            return []
+        
+        # Ordenar por relevancia
+        contexts.sort(key=lambda x: x.relevance_score, reverse=True)
+        
+        optimized = []
+        total_tokens = 0
+        
+        for context in contexts:
+            if total_tokens + context.tokens <= self.max_context_tokens:
+                optimized.append(context)
+                total_tokens += context.tokens
+            else:
+                # Intentar con versión truncada si es posible
+                remaining_tokens = self.max_context_tokens - total_tokens
+                if remaining_tokens > 50:  # Mínimo útil
+                    truncated_content = self._truncate_content(
+                        context.content, 
+                        remaining_tokens
+                    )
+                    if truncated_content:
+                        optimized.append(ContextWindow(
+                            content=truncated_content,
+                            relevance_score=context.relevance_score * 0.8,  # Penalizar truncamiento
+                            timestamp=context.timestamp,
+                            content_type=context.content_type,
+                            tokens=remaining_tokens,
+                            priority=context.priority
+                        ))
+                        break
+                else:
+                    break
+        
+        return optimized
+
+# Ejemplo de uso del sistema de retrieval
+retriever = HybridContextRetriever(max_context_tokens=4000)
+
+# Indexar contenido de ejemplo
+contents = [
+    "El usuario prefiere explicaciones técnicas detalladas con ejemplos de código",
+    "Implementamos autenticación JWT con refresh tokens en el proyecto",
+    "La base de datos PostgreSQL está configurada con conexión pool",
+    "El frontend React usa Redux para manejo de estado global",
+    "Los tests unitarios están implementados con Jest y React Testing Library"
+]
+
+content_types = ["preference", "implementation", "configuration", "architecture", "testing"]
+
+retriever.index_content(contents, content_types)
+
+# Recuperar contexto relevante
+relevant_context = retriever.retrieve_context(
+    query="¿Cómo configurar autenticación en la aplicación?",
+    strategy="hybrid",
+    max_results=3
+)
+
+print("Contexto recuperado:")
+for i, ctx in enumerate(relevant_context, 1):
+    print(f"{i}. Relevancia: {ctx.relevance_score:.3f}")
+    print(f"   Tipo: {ctx.content_type}")
+    print(f"   Contenido: {ctx.content[:100]}...")
+    print(f"   Tokens: {ctx.tokens}")
+    print("---")`;
+
+  const contextWindowingCode = `class AdaptiveContextWindowing:
+    """Sistema de ventanas de contexto adaptativas"""
+    
+    def __init__(self, base_window_size: int = 4000):
+        self.base_window_size = base_window_size
+        self.conversation_history = []
+        self.importance_weights = {
+            'user_preferences': 2.0,
+            'recent_decisions': 1.8,
+            'current_task': 1.5,
+            'background_context': 1.0,
+            'historical_data': 0.8
+        }
+    
+    def create_adaptive_window(self, current_query: str,
+                              available_context: List[ContextWindow],
+                              conversation_state: Dict[str, Any]) -> List[ContextWindow]:
+        """Crea ventana de contexto adaptativa basada en la situación actual"""
+        
+        # 1. Analizar el tipo de consulta
+        query_type = self._analyze_query_type(current_query)
+        
+        # 2. Determinar tamaño de ventana óptimo
+        optimal_size = self._calculate_optimal_window_size(
+            query_type, 
+            conversation_state
+        )
+        
+        # 3. Seleccionar contexto más relevante
+        selected_context = self._select_contextual_content(
+            available_context,
+            query_type,
+            optimal_size
+        )
+        
+        # 4. Organizar contexto por prioridad
+        organized_context = self._organize_context_by_priority(selected_context)
+        
+        return organized_context
+    
+    def _analyze_query_type(self, query: str) -> str:
+        """Analiza el tipo de consulta para adaptar el contexto"""
+        
+        query_lower = query.lower()
+        
+        # Patterns para diferentes tipos de consulta
+        patterns = {
+            'technical_help': ['cómo', 'implementar', 'configurar', 'error', 'problema'],
+            'information_request': ['qué es', 'cuál es', 'explicar', 'definir'],
+            'task_planning': ['plan', 'estrategia', 'pasos', 'organizar'],
+            'decision_making': ['debería', 'recomiendas', 'mejor opción', 'elegir'],
+            'troubleshooting': ['no funciona', 'falla', 'bug', 'arreglar']
+        }
+        
+        for query_type, keywords in patterns.items():
+            if any(keyword in query_lower for keyword in keywords):
+                return query_type
+        
+        return 'general'
+    
+    def _calculate_optimal_window_size(self, query_type: str,
+                                     conversation_state: Dict[str, Any]) -> int:
+        """Calcula el tamaño óptimo de ventana basado en el contexto"""
+        
+        base_size = self.base_window_size
+        
+        # Ajustes basados en tipo de consulta
+        size_adjustments = {
+            'technical_help': 1.5,  # Necesita más contexto técnico
+            'troubleshooting': 1.3,  # Necesita historial de problemas
+            'information_request': 0.8,  # Respuesta más directa
+            'task_planning': 1.2,  # Contexto de proyecto
+            'decision_making': 1.1   # Contexto de opciones
+        }
+        
+        # Ajustes basados en estado de conversación
+        if conversation_state.get('is_complex_task', False):
+            base_size *= 1.3
+        
+        if conversation_state.get('has_code_context', False):
+            base_size *= 1.2
+        
+        if conversation_state.get('is_follow_up', False):
+            base_size *= 0.9  # Menos contexto para seguimientos
+        
+        multiplier = size_adjustments.get(query_type, 1.0)
+        return int(base_size * multiplier)`;
+
+  return (
+    <div className="lesson">
+      <h2>🔍 Retrieval de Contexto</h2>
+      
+      <div className="lesson-intro">
+        <p>
+          El retrieval de contexto eficiente es crucial para proporcionar respuestas relevantes 
+          y mantener conversaciones coherentes, especialmente cuando trabajamos con grandes 
+          volúmenes de información almacenada.
+        </p>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🎯 Desafíos del Retrieval de Contexto</h3>
+        
+        <div className="retrieval-challenges">
+          <div className="challenge-card">
+            <h4>📏 Límites de Tokens</h4>
+            <p>Los LLMs tienen límites de contexto que debemos optimizar</p>
+            <ul>
+              <li>GPT-3.5: ~4K tokens</li>
+              <li>GPT-4: ~8K-32K tokens</li>
+              <li>Claude: ~100K+ tokens</li>
+            </ul>
+          </div>
+          
+          <div className="challenge-card">
+            <h4>⚡ Velocidad vs Precisión</h4>
+            <p>Balance entre respuesta rápida y contexto relevante</p>
+            <ul>
+              <li>Búsqueda exacta: lenta pero precisa</li>
+              <li>Búsqueda aproximada: rápida pero imprecisa</li>
+              <li>Índices híbridos: balance óptimo</li>
+            </ul>
+          </div>
+          
+          <div className="challenge-card">
+            <h4>🎯 Relevancia Contextual</h4>
+            <p>Determinar qué información es más importante</p>
+            <ul>
+              <li>Relevancia semántica</li>
+              <li>Recencia temporal</li>
+              <li>Frecuencia de uso</li>
+              <li>Prioridad de usuario</li>
+            </ul>
+          </div>
+          
+          <div className="challenge-card">
+            <h4>🔄 Contexto Dinámico</h4>
+            <p>Adaptar el contexto según la situación actual</p>
+            <ul>
+              <li>Tipo de consulta</li>
+              <li>Historial de conversación</li>
+              <li>Preferencias del usuario</li>
+              <li>Estado de la tarea</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>💻 Sistema Híbrido de Retrieval</h3>
+        <p>
+          Implementemos un sistema que combine múltiples estrategias de retrieval 
+          para maximizar la relevancia del contexto recuperado:
+        </p>
+        
+        <CodeBlock code={contextRetrievalCode} language="python" />
+      </div>
+
+      <div className="lesson-section">
+        <h3>🔧 Estrategias de Retrieval</h3>
+        
+        <div className="retrieval-strategies">
+          <div className="strategy-card">
+            <h4>🧠 Retrieval Semántico</h4>
+            <p>Busca contenido similar en significado usando embeddings</p>
+            <div className="strategy-details">
+              <strong>Ventajas:</strong> Encuentra conexiones conceptuales
+              <br/>
+              <strong>Ideal para:</strong> Preguntas sobre temas relacionados
+            </div>
+          </div>
+          
+          <div className="strategy-card">
+            <h4>⏰ Retrieval Temporal</h4>
+            <p>Prioriza información reciente o cronológicamente relevante</p>
+            <div className="strategy-details">
+              <strong>Ventajas:</strong> Mantiene contexto actual
+              <br/>
+              <strong>Ideal para:</strong> Seguimiento de conversaciones
+            </div>
+          </div>
+          
+          <div className="strategy-card">
+            <h4>📊 Retrieval por Frecuencia</h4>
+            <p>Favorece contenido frecuentemente accedido o importante</p>
+            <div className="strategy-details">
+              <strong>Ventajas:</strong> Aprende de patrones de uso
+              <br/>
+              <strong>Ideal para:</strong> Información comúnmente referenciada
+            </div>
+          </div>
+          
+          <div className="strategy-card">
+            <h4>🔀 Retrieval Híbrido</h4>
+            <p>Combina múltiples estrategias con pesos adaptativos</p>
+            <div className="strategy-details">
+              <strong>Ventajas:</strong> Balanceado y robusto
+              <br/>
+              <strong>Ideal para:</strong> Uso general y casos complejos
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🪟 Ventanas de Contexto Adaptativas</h3>
+        <p>
+          Las ventanas de contexto deben adaptarse dinámicamente según el tipo de consulta 
+          y el estado de la conversación:
+        </p>
+        
+        <CodeBlock code={contextWindowingCode} language="python" />
+
+        <div className="window-optimization">
+          <h4>⚙️ Optimizaciones de Ventana</h4>
+          <div className="optimization-grid">
+            <div className="optimization-item">
+              <h5>📐 Tamaño Dinámico</h5>
+              <p>Ajusta el tamaño según la complejidad de la consulta</p>
+              <ul>
+                <li>Consultas simples: ventana pequeña</li>
+                <li>Tareas complejas: ventana expandida</li>
+                <li>Troubleshooting: contexto histórico</li>
+              </ul>
+            </div>
+            
+            <div className="optimization-item">
+              <h5>🎯 Priorización Inteligente</h5>
+              <p>Ordena el contexto por relevancia y importancia</p>
+              <ul>
+                <li>Información crítica primero</li>
+                <li>Contexto reciente al inicio</li>
+                <li>Detalles secundarios al final</li>
+              </ul>
+            </div>
+            
+            <div className="optimization-item">
+              <h5>✂️ Truncamiento Inteligente</h5>
+              <p>Corta contenido preservando información clave</p>
+              <ul>
+                <li>Mantiene conceptos principales</li>
+                <li>Preserva conclusiones importantes</li>
+                <li>Indica truncamiento al usuario</li>
+              </ul>
+            </div>
+            
+            <div className="optimization-item">
+              <h5>🔄 Actualización Continua</h5>
+              <p>Refina el contexto basado en interacciones</p>
+              <ul>
+                <li>Aprende de feedback del usuario</li>
+                <li>Ajusta pesos de relevancia</li>
+                <li>Mejora estrategias de retrieval</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>📊 Métricas de Rendimiento</h3>
+        <div className="performance-grid">
+          <div className="metric-card">
+            <h4>⚡ Latencia de Retrieval</h4>
+            <p>Tiempo para recuperar contexto relevante</p>
+            <div className="metric-target">Objetivo: &lt; 50ms</div>
+          </div>
+          
+          <div className="metric-card">
+            <h4>🎯 Precisión</h4>
+            <p>Porcentaje de contexto realmente útil</p>
+            <div className="metric-target">Objetivo: &gt; 80%</div>
+          </div>
+          
+          <div className="metric-card">
+            <h4>📈 Recall</h4>
+            <p>Porcentaje de información relevante recuperada</p>
+            <div className="metric-target">Objetivo: &gt; 70%</div>
+          </div>
+          
+          <div className="metric-card">
+            <h4>💾 Eficiencia de Cache</h4>
+            <p>Tasa de aciertos en cache de contexto</p>
+            <div className="metric-target">Objetivo: &gt; 60%</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🔧 Optimizaciones Avanzadas</h3>
+        <div className="advanced-optimizations">
+          <div className="optimization-technique">
+            <h4>🧠 Re-ranking Neural</h4>
+            <p>Usa modelos neuronales para re-ordenar resultados de retrieval</p>
+          </div>
+          
+          <div className="optimization-technique">
+            <h4>📱 Cache Predictivo</h4>
+            <p>Pre-carga contexto probable basado en patrones de uso</p>
+          </div>
+          
+          <div className="optimization-technique">
+            <h4>🔀 Embedding Multiples</h4>
+            <p>Usa diferentes modelos de embedding para diversos tipos de contenido</p>
+          </div>
+          
+          <div className="optimization-technique">
+            <h4>📊 Feedback Learning</h4>
+            <p>Aprende de interacciones del usuario para mejorar relevancia</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-actions">
+        <button className="btn btn-primary" onClick={onComplete}>
+          Retrieval Optimizado ✓
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Lección 6: Laboratorio
-const MemorySystemLabLesson = ({ onComplete }) => (
-  <div className="lesson">
-    <h2>🔬 Laboratorio: Sistema de Memoria</h2>
-    <p>Implementación completa de un sistema de memoria...</p>
-    <div className="lesson-actions">
-      <button className="btn btn-primary" onClick={onComplete}>
-        Completado
-      </button>
+const MemorySystemLabLesson = ({ onComplete }) => {
+  const completeMemorySystemCode = `import asyncio
+import sqlite3
+import json
+import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional, Tuple
+from dataclasses import dataclass, asdict
+from sentence_transformers import SentenceTransformer
+import chromadb
+import openai
+from enum import Enum
+
+# Configuración de logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class MemoryType(Enum):
+    """Tipos de memoria en el sistema"""
+    SHORT_TERM = "short_term"
+    LONG_TERM = "long_term"
+    WORKING = "working"
+    PROCEDURAL = "procedural"
+
+@dataclass
+class MemoryEntry:
+    """Entrada de memoria unificada"""
+    id: str
+    content: str
+    memory_type: MemoryType
+    importance_score: float
+    created_at: datetime
+    last_accessed: datetime
+    access_count: int
+    tags: List[str]
+    metadata: Dict[str, Any]
+    embedding: Optional[List[float]] = None
+
+class ComprehensiveMemorySystem:
+    """Sistema completo de memoria para agentes IA"""
+    
+    def __init__(self, config: Dict[str, Any] = None):
+        self.config = config or self._default_config()
+        
+        # Inicializar componentes
+        self._init_databases()
+        self._init_ai_models()
+        self._init_memory_managers()
+        
+        logger.info("Sistema de memoria inicializado correctamente")
+    
+    def _default_config(self) -> Dict[str, Any]:
+        """Configuración por defecto del sistema"""
+        return {
+            "max_short_term_entries": 50,
+            "max_working_memory_tokens": 8000,
+            "embedding_model": "all-MiniLM-L6-v2",
+            "llm_model": "gpt-3.5-turbo",
+            "memory_decay_rate": 0.95,
+            "importance_threshold": 0.3,
+            "auto_summarize_threshold": 100,
+            "databases": {
+                "sqlite_path": "comprehensive_memory.db",
+                "chromadb_path": "./comprehensive_chroma_db"
+            }
+        }
+    
+    def _init_databases(self):
+        """Inicializa todas las bases de datos"""
+        # Base de datos relacional para metadatos
+        self.sql_db_path = self.config["databases"]["sqlite_path"]
+        self._create_sql_schema()
+        
+        # Base de datos vectorial para búsqueda semántica
+        self.chroma_client = chromadb.PersistentClient(
+            path=self.config["databases"]["chromadb_path"]
+        )
+        self.memory_collection = self.chroma_client.get_or_create_collection(
+            name="memory_entries",
+            metadata={"hnsw:space": "cosine"}
+        )
+    
+    def _init_ai_models(self):
+        """Inicializa modelos de IA"""
+        self.encoder = SentenceTransformer(self.config["embedding_model"])
+        self.openai_client = openai.OpenAI()
+    
+    def _init_memory_managers(self):
+        """Inicializa gestores especializados de memoria"""
+        from .short_term_memory import ShortTermMemoryManager
+        from .long_term_memory import LongTermMemoryManager
+        from .working_memory import WorkingMemoryManager
+        from .summarizer import IntelligentSummarizer
+        from .retriever import HybridContextRetriever
+        
+        self.short_term = ShortTermMemoryManager(self)
+        self.long_term = LongTermMemoryManager(self)
+        self.working = WorkingMemoryManager(self)
+        self.summarizer = IntelligentSummarizer(self)
+        self.retriever = HybridContextRetriever(self)
+    
+    def _create_sql_schema(self):
+        """Crea el esquema de base de datos"""
+        with sqlite3.connect(self.sql_db_path) as conn:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS memory_entries (
+                    id TEXT PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    memory_type TEXT NOT NULL,
+                    importance_score REAL NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
+                    last_accessed TIMESTAMP,
+                    access_count INTEGER DEFAULT 0,
+                    tags TEXT,
+                    metadata TEXT,
+                    is_active BOOLEAN DEFAULT 1
+                );
+                
+                CREATE TABLE IF NOT EXISTS memory_relationships (
+                    id INTEGER PRIMARY KEY,
+                    source_memory_id TEXT,
+                    target_memory_id TEXT,
+                    relationship_type TEXT,
+                    strength REAL DEFAULT 1.0,
+                    created_at TIMESTAMP,
+                    FOREIGN KEY (source_memory_id) REFERENCES memory_entries (id),
+                    FOREIGN KEY (target_memory_id) REFERENCES memory_entries (id)
+                );
+                
+                CREATE TABLE IF NOT EXISTS conversation_sessions (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    started_at TIMESTAMP,
+                    ended_at TIMESTAMP,
+                    summary TEXT,
+                    metadata TEXT
+                );
+                
+                CREATE TABLE IF NOT EXISTS memory_snapshots (
+                    id INTEGER PRIMARY KEY,
+                    session_id TEXT,
+                    snapshot_data TEXT,
+                    created_at TIMESTAMP,
+                    FOREIGN KEY (session_id) REFERENCES conversation_sessions (id)
+                );
+                
+                -- Índices para optimización
+                CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_entries(memory_type);
+                CREATE INDEX IF NOT EXISTS idx_importance ON memory_entries(importance_score);
+                CREATE INDEX IF NOT EXISTS idx_created_at ON memory_entries(created_at);
+                CREATE INDEX IF NOT EXISTS idx_last_accessed ON memory_entries(last_accessed);
+                CREATE INDEX IF NOT EXISTS idx_access_count ON memory_entries(access_count);
+            """)
+    
+    async def store_memory(self, content: str, 
+                          memory_type: MemoryType = MemoryType.SHORT_TERM,
+                          importance: float = 1.0,
+                          tags: List[str] = None,
+                          metadata: Dict[str, Any] = None) -> str:
+        """Almacena una nueva entrada de memoria"""
+        
+        # Crear entrada de memoria
+        memory_entry = MemoryEntry(
+            id=self._generate_memory_id(),
+            content=content,
+            memory_type=memory_type,
+            importance_score=importance,
+            created_at=datetime.now(),
+            last_accessed=datetime.now(),
+            access_count=1,
+            tags=tags or [],
+            metadata=metadata or {}
+        )
+        
+        # Generar embedding
+        memory_entry.embedding = self.encoder.encode([content])[0].tolist()
+        
+        # Almacenar en base de datos vectorial
+        await self._store_in_vector_db(memory_entry)
+        
+        # Almacenar en base de datos relacional
+        await self._store_in_sql_db(memory_entry)
+        
+        # Gestión específica por tipo de memoria
+        if memory_type == MemoryType.SHORT_TERM:
+            await self.short_term.manage_capacity()
+        elif memory_type == MemoryType.LONG_TERM:
+            await self.long_term.optimize_storage()
+        
+        logger.info(f"Memoria almacenada: {memory_entry.id} ({memory_type.value})")
+        return memory_entry.id
+    
+    async def retrieve_memories(self, query: str,
+                               memory_types: List[MemoryType] = None,
+                               max_results: int = 10,
+                               min_relevance: float = 0.5) -> List[MemoryEntry]:
+        """Recupera memorias relevantes para una consulta"""
+        
+        # Usar el sistema de retrieval híbrido
+        contexts = await self.retriever.retrieve_context(
+            query=query,
+            filters={
+                "memory_types": memory_types,
+                "min_relevance": min_relevance
+            },
+            max_results=max_results
+        )
+        
+        # Convertir contextos a entradas de memoria
+        memories = []
+        for context in contexts:
+            memory = await self._get_memory_by_id(context.memory_id)
+            if memory:
+                memories.append(memory)
+        
+        return memories
+    
+    async def create_summary(self, session_id: str) -> str:
+        """Crea un resumen de la sesión de conversación"""
+        
+        # Obtener todas las memorias de la sesión
+        session_memories = await self._get_session_memories(session_id)
+        
+        # Crear resumen usando el sistema inteligente
+        summary = await self.summarizer.create_session_summary(
+            memories=session_memories,
+            session_id=session_id
+        )
+        
+        # Almacenar resumen como memoria de largo plazo
+        summary_id = await self.store_memory(
+            content=summary,
+            memory_type=MemoryType.LONG_TERM,
+            importance=1.5,
+            tags=["session_summary", session_id],
+            metadata={"session_id": session_id, "type": "summary"}
+        )
+        
+        return summary_id
+    
+    async def optimize_memory_system(self):
+        """Ejecuta rutinas de optimización del sistema"""
+        
+        logger.info("Iniciando optimización del sistema de memoria")
+        
+        # Optimizar memoria de corto plazo
+        await self.short_term.decay_old_memories()
+        await self.short_term.promote_important_memories()
+        
+        # Optimizar memoria de largo plazo
+        await self.long_term.consolidate_similar_memories()
+        await self.long_term.archive_old_memories()
+        
+        # Optimizar índices de búsqueda
+        await self._optimize_vector_indices()
+        
+        # Limpiar entradas obsoletas
+        await self._cleanup_obsolete_entries()
+        
+        logger.info("Optimización completada")
+    
+    async def get_memory_statistics(self) -> Dict[str, Any]:
+        """Obtiene estadísticas del sistema de memoria"""
+        
+        with sqlite3.connect(self.sql_db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Estadísticas generales
+            cursor.execute("SELECT COUNT(*) FROM memory_entries WHERE is_active = 1")
+            total_memories = cursor.fetchone()[0]
+            
+            # Por tipo de memoria
+            cursor.execute("""
+                SELECT memory_type, COUNT(*) 
+                FROM memory_entries 
+                WHERE is_active = 1 
+                GROUP BY memory_type
+            """)
+            memory_by_type = dict(cursor.fetchall())
+            
+            # Memorias más accedidas
+            cursor.execute("""
+                SELECT content, access_count 
+                FROM memory_entries 
+                WHERE is_active = 1 
+                ORDER BY access_count DESC 
+                LIMIT 10
+            """)
+            top_memories = cursor.fetchall()
+            
+            # Estadísticas temporales
+            cursor.execute("""
+                SELECT 
+                    DATE(created_at) as date,
+                    COUNT(*) as memories_created
+                FROM memory_entries 
+                WHERE is_active = 1 AND created_at >= datetime('now', '-30 days')
+                GROUP BY DATE(created_at)
+                ORDER BY date DESC
+            """)
+            daily_stats = cursor.fetchall()
+        
+        return {
+            "total_memories": total_memories,
+            "memory_by_type": memory_by_type,
+            "top_accessed_memories": top_memories,
+            "daily_creation_stats": daily_stats,
+            "system_health": await self._assess_system_health()
+        }
+    
+    async def _assess_system_health(self) -> Dict[str, Any]:
+        """Evalúa la salud del sistema de memoria"""
+        
+        # Métricas de rendimiento
+        vector_index_size = self.memory_collection.count()
+        
+        # Ratio de memorias activas vs inactivas
+        with sqlite3.connect(self.sql_db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM memory_entries WHERE is_active = 1")
+            active_count = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM memory_entries WHERE is_active = 0")
+            inactive_count = cursor.fetchone()[0]
+        
+        active_ratio = active_count / (active_count + inactive_count) if (active_count + inactive_count) > 0 else 1.0
+        
+        # Distribución de importancia
+        cursor.execute("""
+            SELECT 
+                CASE 
+                    WHEN importance_score >= 1.5 THEN 'high'
+                    WHEN importance_score >= 1.0 THEN 'medium'
+                    ELSE 'low'
+                END as importance_level,
+                COUNT(*) as count
+            FROM memory_entries 
+            WHERE is_active = 1
+            GROUP BY importance_level
+        """)
+        importance_distribution = dict(cursor.fetchall())
+        
+        return {
+            "vector_index_size": vector_index_size,
+            "active_memory_ratio": active_ratio,
+            "importance_distribution": importance_distribution,
+            "status": "healthy" if active_ratio > 0.8 and vector_index_size > 0 else "needs_attention"
+        }
+
+# Ejemplo de uso completo del sistema
+async def main():
+    # Inicializar sistema de memoria
+    memory_system = ComprehensiveMemorySystem()
+    
+    # Simular una conversación
+    session_id = "session_001"
+    
+    # Almacenar información del usuario
+    await memory_system.store_memory(
+        content="El usuario es desarrollador senior con experiencia en Python y React",
+        memory_type=MemoryType.LONG_TERM,
+        importance=1.8,
+        tags=["user_profile", "skills"],
+        metadata={"session_id": session_id}
+    )
+    
+    # Almacenar decisiones de la conversación
+    await memory_system.store_memory(
+        content="Decidimos usar FastAPI para el backend en lugar de Django",
+        memory_type=MemoryType.SHORT_TERM,
+        importance=1.5,
+        tags=["architecture", "decision"],
+        metadata={"session_id": session_id, "context": "project_setup"}
+    )
+    
+    # Almacenar código discutido
+    await memory_system.store_memory(
+        content="Implementamos autenticación JWT con refresh tokens usando python-jose",
+        memory_type=MemoryType.PROCEDURAL,
+        importance=1.3,
+        tags=["implementation", "auth", "jwt"],
+        metadata={"session_id": session_id, "code_type": "authentication"}
+    )
+    
+    # Recuperar contexto relevante
+    relevant_memories = await memory_system.retrieve_memories(
+        query="¿Cómo configuramos la autenticación en el proyecto?",
+        max_results=5
+    )
+    
+    print("Memorias relevantes recuperadas:")
+    for memory in relevant_memories:
+        print(f"- {memory.content} (Importancia: {memory.importance_score})")
+    
+    # Crear resumen de sesión
+    summary_id = await memory_system.create_summary(session_id)
+    print(f"Resumen de sesión creado: {summary_id}")
+    
+    # Obtener estadísticas
+    stats = await memory_system.get_memory_statistics()
+    print(f"Estadísticas del sistema: {stats}")
+    
+    # Optimizar sistema
+    await memory_system.optimize_memory_system()
+
+if __name__ == "__main__":
+    asyncio.run(main())`;
+
+  const integrationTestsCode = `import pytest
+import asyncio
+from datetime import datetime, timedelta
+from comprehensive_memory_system import ComprehensiveMemorySystem, MemoryType, MemoryEntry
+
+class TestMemorySystemIntegration:
+    """Tests de integración para el sistema completo de memoria"""
+    
+    @pytest.fixture
+    async def memory_system(self):
+        """Fixture que proporciona un sistema de memoria limpio para cada test"""
+        config = {
+            "databases": {
+                "sqlite_path": ":memory:",  # Base de datos en memoria para tests
+                "chromadb_path": "./test_chroma_db"
+            },
+            "max_short_term_entries": 10,
+            "auto_summarize_threshold": 5
+        }
+        
+        system = ComprehensiveMemorySystem(config)
+        yield system
+        
+        # Cleanup después del test
+        await system.cleanup()
+    
+    @pytest.mark.asyncio
+    async def test_complete_conversation_flow(self, memory_system):
+        """Test del flujo completo de una conversación"""
+        
+        session_id = "test_session_001"
+        
+        # 1. Almacenar información inicial del usuario
+        user_profile_id = await memory_system.store_memory(
+            content="Usuario desarrollador con 5 años de experiencia en Python",
+            memory_type=MemoryType.LONG_TERM,
+            importance=1.8,
+            tags=["user_profile"],
+            metadata={"session_id": session_id}
+        )
+        
+        # 2. Almacenar múltiples intercambios de conversación
+        conversation_memories = []
+        for i in range(7):
+            memory_id = await memory_system.store_memory(
+                content=f"Intercambio de conversación {i+1}: Discusión sobre arquitectura de microservicios",
+                memory_type=MemoryType.SHORT_TERM,
+                importance=1.0 + (i * 0.1),
+                tags=["conversation", "architecture"],
+                metadata={"session_id": session_id, "turn": i+1}
+            )
+            conversation_memories.append(memory_id)
+        
+        # 3. Verificar que el sistema automáticamente resumió cuando llegó al threshold
+        stats = await memory_system.get_memory_statistics()
+        assert stats["total_memories"] > 0
+        
+        # 4. Recuperar contexto relevante
+        relevant_memories = await memory_system.retrieve_memories(
+            query="¿Cuál es el perfil del usuario y qué hemos discutido sobre arquitectura?",
+            max_results=5
+        )
+        
+        assert len(relevant_memories) > 0
+        assert any("desarrollador" in memory.content for memory in relevant_memories)
+        assert any("arquitectura" in memory.content for memory in relevant_memories)
+        
+        # 5. Crear resumen de sesión
+        summary_id = await memory_system.create_summary(session_id)
+        assert summary_id is not None
+        
+        # 6. Verificar que el resumen se almacenó correctamente
+        summary_memories = await memory_system.retrieve_memories(
+            query="resumen de sesión",
+            memory_types=[MemoryType.LONG_TERM]
+        )
+        assert len(summary_memories) > 0
+    
+    @pytest.mark.asyncio
+    async def test_memory_optimization_cycle(self, memory_system):
+        """Test del ciclo completo de optimización de memoria"""
+        
+        # Crear memorias de diferentes tipos y edades
+        old_memories = []
+        for i in range(5):
+            memory_id = await memory_system.store_memory(
+                content=f"Memoria antigua {i}",
+                memory_type=MemoryType.SHORT_TERM,
+                importance=0.2,  # Baja importancia
+                tags=["old"]
+            )
+            old_memories.append(memory_id)
+            
+            # Simular que son memorias antiguas
+            await memory_system._update_memory_timestamp(
+                memory_id,
+                datetime.now() - timedelta(days=30)
+            )
+        
+        # Crear memorias importantes recientes
+        important_memories = []
+        for i in range(3):
+            memory_id = await memory_system.store_memory(
+                content=f"Memoria importante {i}",
+                memory_type=MemoryType.SHORT_TERM,
+                importance=1.5,
+                tags=["important"]
+            )
+            important_memories.append(memory_id)
+        
+        # Ejecutar optimización
+        await memory_system.optimize_memory_system()
+        
+        # Verificar que las memorias importantes se mantuvieron
+        for memory_id in important_memories:
+            memory = await memory_system._get_memory_by_id(memory_id)
+            assert memory is not None
+            assert memory.importance_score >= 1.5
+        
+        # Verificar salud del sistema después de optimización
+        health = await memory_system._assess_system_health()
+        assert health["status"] in ["healthy", "needs_attention"]
+    
+    @pytest.mark.asyncio
+    async def test_cross_session_memory_retrieval(self, memory_system):
+        """Test de recuperación de memoria entre sesiones"""
+        
+        # Sesión 1: Almacenar información sobre un proyecto
+        session1_id = "session_001"
+        await memory_system.store_memory(
+            content="Proyecto e-commerce con React frontend y Node.js backend",
+            memory_type=MemoryType.LONG_TERM,
+            importance=1.6,
+            tags=["project", "ecommerce"],
+            metadata={"session_id": session1_id}
+        )
+        
+        # Sesión 2: Consultar sobre el proyecto anterior
+        session2_id = "session_002"
+        retrieved_memories = await memory_system.retrieve_memories(
+            query="¿Qué tipo de proyecto estamos desarrollando?",
+            max_results=3
+        )
+        
+        # Verificar que se recuperó información de la sesión anterior
+        assert len(retrieved_memories) > 0
+        assert any("e-commerce" in memory.content.lower() for memory in retrieved_memories)
+        
+        # Almacenar nueva información en sesión 2
+        await memory_system.store_memory(
+            content="Agregamos sistema de pagos con Stripe",
+            memory_type=MemoryType.SHORT_TERM,
+            importance=1.3,
+            tags=["project", "payments"],
+            metadata={"session_id": session2_id}
+        )
+        
+        # Verificar que ahora tenemos contexto de ambas sesiones
+        full_context = await memory_system.retrieve_memories(
+            query="proyecto pagos ecommerce",
+            max_results=5
+        )
+        
+        session_ids = set()
+        for memory in full_context:
+            if "session_id" in memory.metadata:
+                session_ids.add(memory.metadata["session_id"])
+        
+        assert len(session_ids) >= 2  # Contexto de múltiples sesiones
+    
+    @pytest.mark.asyncio
+    async def test_performance_under_load(self, memory_system):
+        """Test de rendimiento bajo carga"""
+        
+        import time
+        
+        # Almacenar gran cantidad de memorias
+        start_time = time.time()
+        
+        memory_ids = []
+        for i in range(100):
+            memory_id = await memory_system.store_memory(
+                content=f"Memoria de carga {i}: Contenido de prueba con información técnica relevante",
+                memory_type=MemoryType.SHORT_TERM if i % 2 == 0 else MemoryType.LONG_TERM,
+                importance=0.5 + (i % 10) * 0.1,
+                tags=[f"tag_{i%5}", "load_test"],
+                metadata={"batch": "performance_test", "index": i}
+            )
+            memory_ids.append(memory_id)
+        
+        storage_time = time.time() - start_time
+        
+        # Test de recuperación masiva
+        start_time = time.time()
+        
+        for i in range(20):
+            results = await memory_system.retrieve_memories(
+                query=f"información técnica {i}",
+                max_results=10
+            )
+            assert len(results) > 0
+        
+        retrieval_time = time.time() - start_time
+        
+        # Verificar tiempos aceptables (ajustar según hardware)
+        assert storage_time < 30.0  # 100 memorias en menos de 30 segundos
+        assert retrieval_time < 10.0  # 20 búsquedas en menos de 10 segundos
+        
+        # Verificar estado del sistema
+        stats = await memory_system.get_memory_statistics()
+        assert stats["total_memories"] >= 100
+        
+        health = await memory_system._assess_system_health()
+        assert health["vector_index_size"] >= 100`;
+
+  return (
+    <div className="lesson">
+      <h2>🔬 Laboratorio: Sistema de Memoria</h2>
+      
+      <div className="lesson-intro">
+        <p>
+          En este laboratorio construiremos un sistema completo de memoria que integra 
+          todos los conceptos aprendidos: memoria de corto y largo plazo, resúmenes 
+          inteligentes, y retrieval de contexto eficiente.
+        </p>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🏗️ Arquitectura del Sistema Completo</h3>
+        
+        <div className="system-architecture">
+          <div className="architecture-overview">
+            <h4>📋 Componentes Principales</h4>
+            <div className="components-overview">
+              <div className="component-group">
+                <h5>💾 Capa de Almacenamiento</h5>
+                <ul>
+                  <li>SQLite para metadatos y relaciones</li>
+                  <li>ChromaDB para búsqueda vectorial</li>
+                  <li>Sistema de archivos para snapshots</li>
+                </ul>
+              </div>
+              
+              <div className="component-group">
+                <h5>🧠 Gestores de Memoria</h5>
+                <ul>
+                  <li>ShortTermMemoryManager</li>
+                  <li>LongTermMemoryManager</li>
+                  <li>WorkingMemoryManager</li>
+                </ul>
+              </div>
+              
+              <div className="component-group">
+                <h5>🔧 Procesadores Inteligentes</h5>
+                <ul>
+                  <li>IntelligentSummarizer</li>
+                  <li>HybridContextRetriever</li>
+                  <li>MemoryOptimizer</li>
+                </ul>
+              </div>
+              
+              <div className="component-group">
+                <h5>📊 Monitoreo y Análisis</h5>
+                <ul>
+                  <li>Sistema de métricas</li>
+                  <li>Health monitoring</li>
+                  <li>Performance analytics</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>💻 Implementación Completa</h3>
+        <p>
+          Aquí está la implementación completa del sistema de memoria que integra 
+          todos los componentes que hemos construido:
+        </p>
+        
+        <CodeBlock code={completeMemorySystemCode} language="python" />
+      </div>
+
+      <div className="lesson-section">
+        <h3>🧪 Tests de Integración</h3>
+        <p>
+          Para asegurar que nuestro sistema funciona correctamente, implementamos 
+          una suite completa de tests de integración:
+        </p>
+        
+        <CodeBlock code={integrationTestsCode} language="python" />
+      </div>
+
+      <div className="lesson-section">
+        <h3>🚀 Casos de Uso Prácticos</h3>
+        
+        <div className="use-cases">
+          <div className="use-case-card">
+            <h4>💬 Asistente de Conversación</h4>
+            <p>Chatbot que recuerda preferencias, historial y contexto del usuario</p>
+            <div className="use-case-features">
+              <span className="feature">Personalización continua</span>
+              <span className="feature">Contexto multi-sesión</span>
+              <span className="feature">Aprendizaje adaptativo</span>
+            </div>
+          </div>
+          
+          <div className="use-case-card">
+            <h4>🎓 Tutor Inteligente</h4>
+            <p>Sistema educativo que adapta enseñanza basada en progreso del estudiante</p>
+            <div className="use-case-features">
+              <span className="feature">Tracking de progreso</span>
+              <span className="feature">Contenido adaptativo</span>
+              <span className="feature">Refuerzo personalizado</span>
+            </div>
+          </div>
+          
+          <div className="use-case-card">
+            <h4>🛠️ Asistente de Desarrollo</h4>
+            <p>Copiloto que entiende el proyecto, decisiones y patrones de código</p>
+            <div className="use-case-features">
+              <span className="feature">Contexto de proyecto</span>
+              <span className="feature">Decisiones arquitecturales</span>
+              <span className="feature">Patrones de código</span>
+            </div>
+          </div>
+          
+          <div className="use-case-card">
+            <h4>🏥 Asistente Médico</h4>
+            <p>Sistema que mantiene historial completo y relevante del paciente</p>
+            <div className="use-case-features">
+              <span className="feature">Historial médico</span>
+              <span className="feature">Patrones de síntomas</span>
+              <span className="feature">Tratamientos efectivos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>📈 Métricas y Monitoreo</h3>
+        
+        <div className="monitoring-dashboard">
+          <h4>🎯 KPIs del Sistema</h4>
+          <div className="kpi-grid">
+            <div className="kpi-item">
+              <h5>⚡ Latencia Media</h5>
+              <div className="kpi-value">&lt; 100ms</div>
+              <div className="kpi-description">Tiempo de respuesta del sistema</div>
+            </div>
+            
+            <div className="kpi-item">
+              <h5>🎯 Precisión de Retrieval</h5>
+              <div className="kpi-value">&gt; 85%</div>
+              <div className="kpi-description">Relevancia del contexto recuperado</div>
+            </div>
+            
+            <div className="kpi-item">
+              <h5>💾 Eficiencia de Almacenamiento</h5>
+              <div className="kpi-value">70% compresión</div>
+              <div className="kpi-description">Reducción de redundancia</div>
+            </div>
+            
+            <div className="kpi-item">
+              <h5>🔄 Disponibilidad</h5>
+              <div className="kpi-value">99.9%</div>
+              <div className="kpi-description">Uptime del sistema</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🔧 Configuración y Deployment</h3>
+        
+        <div className="deployment-guide">
+          <div className="deployment-step">
+            <h4>📦 Instalación de Dependencias</h4>
+            <div className="code-snippet">
+              <code>pip install sentence-transformers chromadb openai sqlite3 pytest asyncio</code>
+            </div>
+          </div>
+          
+          <div className="deployment-step">
+            <h4>⚙️ Configuración del Ambiente</h4>
+            <ul>
+              <li>Configurar API keys de OpenAI</li>
+              <li>Establecer paths de bases de datos</li>
+              <li>Configurar parámetros de memoria</li>
+              <li>Establecer límites de recursos</li>
+            </ul>
+          </div>
+          
+          <div className="deployment-step">
+            <h4>🚀 Deployment en Producción</h4>
+            <ul>
+              <li>Configurar backup automático</li>
+              <li>Implementar health checks</li>
+              <li>Configurar alertas de monitoreo</li>
+              <li>Establecer políticas de scaling</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🎯 Ejercicios Prácticos</h3>
+        
+        <div className="exercises">
+          <div className="exercise-card">
+            <h4>🛠️ Ejercicio 1: Implementación Básica</h4>
+            <p>Implementa el sistema básico y realiza operaciones CRUD de memoria</p>
+            <ul>
+              <li>Crear instancia del sistema</li>
+              <li>Almacenar diferentes tipos de memoria</li>
+              <li>Recuperar contexto relevante</li>
+              <li>Generar resúmenes</li>
+            </ul>
+          </div>
+          
+          <div className="exercise-card">
+            <h4>🧪 Ejercicio 2: Tests Personalizados</h4>
+            <p>Crea tests específicos para tu caso de uso</p>
+            <ul>
+              <li>Test de rendimiento con tu dataset</li>
+              <li>Test de precisión de retrieval</li>
+              <li>Test de optimización de memoria</li>
+              <li>Test de recuperación ante fallos</li>
+            </ul>
+          </div>
+          
+          <div className="exercise-card">
+            <h4>⚡ Ejercicio 3: Optimización</h4>
+            <p>Optimiza el sistema para tu caso específico</p>
+            <ul>
+              <li>Ajustar parámetros de embedding</li>
+              <li>Configurar estrategias de resumen</li>
+              <li>Optimizar índices de búsqueda</li>
+              <li>Implementar cache inteligente</li>
+            </ul>
+          </div>
+          
+          <div className="exercise-card">
+            <h4>🎨 Ejercicio 4: Extensión</h4>
+            <p>Extiende el sistema con funcionalidades adicionales</p>
+            <ul>
+              <li>Soporte para memoria visual</li>
+              <li>Integración con APIs externas</li>
+              <li>Dashboard de monitoreo</li>
+              <li>API REST para el sistema</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-completion">
+        <h3>🎉 ¡Felicitaciones!</h3>
+        <p>
+          Has completado exitosamente el <strong>Módulo C: Sistemas de Memoria</strong>. 
+          Ahora tienes las herramientas y conocimientos para implementar sistemas de 
+          memoria avanzados en tus agentes IA.
+        </p>
+        
+        <div className="completion-summary">
+          <h4>📚 Lo que has aprendido:</h4>
+          <ul>
+            <li>✅ Fundamentos de memoria en agentes IA</li>
+            <li>✅ Implementación de memoria de corto plazo</li>
+            <li>✅ Sistemas de memoria persistente de largo plazo</li>
+            <li>✅ Resúmenes inteligentes y compresión de información</li>
+            <li>✅ Retrieval de contexto híbrido y eficiente</li>
+            <li>✅ Sistema completo integrado con tests y monitoreo</li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="lesson-actions">
+        <button className="btn btn-primary" onClick={onComplete}>
+          🎓 Módulo C Completado ✓
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default ModuleC;

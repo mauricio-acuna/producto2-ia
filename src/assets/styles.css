@@ -2553,3 +2553,769 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Estilos específicos para Lección 4: Resúmenes Inteligentes */
+.summary-benefits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.benefit-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #22c55e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.benefit-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(34, 197, 94, 0.2);
+  border-color: #16a34a;
+}
+
+.benefit-card h4 {
+  color: #15803d;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.benefit-card p {
+  color: #166534;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.benefit-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.benefit-card li {
+  color: #14532d;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+  position: relative;
+}
+
+.benefit-card li::before {
+  content: "✓";
+  color: #22c55e;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.progressive-strategies {
+  margin: 2rem 0;
+}
+
+.strategies-comparison {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.strategy-option {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.strategy-option:hover {
+  border-color: #6366f1;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.15);
+  transform: translateY(-2px);
+}
+
+.strategy-option h5 {
+  color: #4338ca;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.strategy-option p {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.strategy-option ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.strategy-option li {
+  color: #374151;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+  position: relative;
+}
+
+.strategy-option li::before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 0.8rem;
+}
+
+.content-types {
+  margin: 2rem 0;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.content-type {
+  background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+  border: 1px solid #eab308;
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.content-type:hover {
+  border-color: #ca8a04;
+  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.2);
+}
+
+.content-type h5 {
+  color: #a16207;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.content-type p {
+  color: #92400e;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.processing-method {
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.processing-method strong {
+  color: #d97706;
+}
+
+.configuration-options {
+  margin: 2rem 0;
+}
+
+.config-category {
+  margin-bottom: 2rem;
+}
+
+.config-category h4 {
+  color: #374151;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.config-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.config-option {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: 120px 120px 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.option-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.option-value {
+  background: #f3f4f6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.option-use {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.quality-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.metric-card {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #3b82f6;
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+.metric-card h4 {
+  color: #1d4ed8;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.metric-card p {
+  color: #1e40af;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.metric-details {
+  background: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: #0c4a6e;
+}
+
+.metric-details strong {
+  color: #0369a1;
+}
+
+/* Estilos específicos para Lección 5: Retrieval de Contexto */
+.retrieval-challenges {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.challenge-card {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #f87171;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.challenge-card:hover {
+  border-color: #ef4444;
+  box-shadow: 0 6px 20px rgba(248, 113, 113, 0.2);
+  transform: translateY(-2px);
+}
+
+.challenge-card h4 {
+  color: #dc2626;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.challenge-card p {
+  color: #991b1b;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.challenge-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.challenge-card li {
+  color: #7f1d1d;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+  position: relative;
+}
+
+.challenge-card li::before {
+  content: "▶";
+  color: #f87171;
+  font-size: 0.8rem;
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+}
+
+.retrieval-strategies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.window-optimization {
+  margin: 2rem 0;
+}
+
+.optimization-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.optimization-item {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #0ea5e9;
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.optimization-item:hover {
+  border-color: #0284c7;
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.2);
+}
+
+.optimization-item h5 {
+  color: #0369a1;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.optimization-item p {
+  color: #0c4a6e;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.optimization-item ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.optimization-item li {
+  color: #075985;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+  position: relative;
+}
+
+.optimization-item li::before {
+  content: "•";
+  color: #0ea5e9;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.advanced-optimizations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.optimization-technique {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.optimization-technique:hover {
+  border-color: #9333ea;
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.15);
+}
+
+.optimization-technique h4 {
+  color: #7c3aed;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.optimization-technique p {
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Estilos específicos para Lección 6: Laboratorio */
+.system-architecture {
+  margin: 2rem 0;
+}
+
+.architecture-overview {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.components-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.component-group {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.component-group h5 {
+  color: #374151;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.component-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.component-group li {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  padding-left: 1.2rem;
+  position: relative;
+}
+
+.component-group li::before {
+  content: "▸";
+  color: #9ca3af;
+  position: absolute;
+  left: 0;
+}
+
+.use-cases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.use-case-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #94a3b8;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.use-case-card:hover {
+  border-color: #64748b;
+  box-shadow: 0 8px 25px rgba(148, 163, 184, 0.25);
+  transform: translateY(-4px);
+}
+
+.use-case-card h4 {
+  color: #1e293b;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.use-case-card p {
+  color: #475569;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.use-case-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.feature {
+  background: #334155;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.monitoring-dashboard {
+  margin: 2rem 0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.kpi-item {
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.kpi-item:hover {
+  border-color: #64748b;
+  box-shadow: 0 4px 12px rgba(203, 213, 225, 0.3);
+}
+
+.kpi-item h5 {
+  color: #334155;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.kpi-value {
+  color: #059669;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.kpi-description {
+  color: #6b7280;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.deployment-guide {
+  margin: 2rem 0;
+}
+
+.deployment-step {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.deployment-step h4 {
+  color: #374151;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.code-snippet {
+  background: #1f2937;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.code-snippet code {
+  color: #f9fafb;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 0.9rem;
+}
+
+.exercises {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.exercise-card {
+  background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.exercise-card:hover {
+  border-color: #d97706;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2);
+  transform: translateY(-2px);
+}
+
+.exercise-card h4 {
+  color: #92400e;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.exercise-card p {
+  color: #78350f;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.exercise-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.exercise-card li {
+  color: #a16207;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+  position: relative;
+}
+
+.exercise-card li::before {
+  content: "▶";
+  color: #f59e0b;
+  font-size: 0.8rem;
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+}
+
+.lesson-completion {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 2px solid #10b981;
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.lesson-completion h3 {
+  color: #047857;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.lesson-completion p {
+  color: #065f46;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.completion-summary {
+  background: white;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.completion-summary h4 {
+  color: #047857;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.completion-summary ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.completion-summary li {
+  color: #065f46;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.completion-summary li::before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 0.9rem;
+}
+
+/* Responsive design para lecciones 4, 5 y 6 */
+@media (max-width: 768px) {
+  .summary-benefits,
+  .retrieval-challenges,
+  .use-cases,
+  .exercises {
+    grid-template-columns: 1fr;
+  }
+  
+  .config-option {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .components-overview,
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .strategies-comparison,
+  .content-grid,
+  .optimization-grid,
+  .performance-grid,
+  .advanced-optimizations {
+    grid-template-columns: 1fr;
+  }
+}

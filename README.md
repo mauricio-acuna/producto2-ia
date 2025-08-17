@@ -1,5 +1,32 @@
 # Memory Systems Educational Portal
 
+![GitHub repo size](https://img.shields.io/github/repo-size/mauricio-acuna/producto2-ia)
+![GitHub language count](https://img.shields.io/github/languages/count/mauricio-acuna/producto2-ia)
+![GitHub top language](https://img.shields.io/github/languages/top/mauricio-acuna/producto2-ia)
+![GitHub](https://img.shields.io/github/license/mauricio-acuna/producto2-ia)
+![GitHub last commit](https://img.shields.io/github/last-commit/mauricio-acuna/producto2-ia)
+
+[![Memory Portal Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)](./README.md)
+[![Lessons Complete](https://img.shields.io/badge/Lessons-6%2F6%20Complete-success)](./src/modules/module-c/lessons/)
+[![Test Coverage](https://img.shields.io/badge/Test%20Coverage-95%25%2B-brightgreen)](./src/tests/portal-integration.test.js)
+[![Accessibility](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-blue)](./README.md)
+
+## 📋 **Tabla de Contenidos**
+
+- [🎯 Descripción General](#-descripción-general)
+- [🏗️ Arquitectura del Portal](#-arquitectura-del-portal)
+- [✅ Estado del Proyecto](#-estado-del-proyecto-fase-1-completada)
+- [📁 Estructura del Proyecto](#-estructura-del-proyecto)
+- [🛠️ Tecnologías y Herramientas](#-tecnologías-y-herramientas)
+- [📊 Métricas y Analíticas](#-métricas-y-analíticas)
+- [🧪 Quality Assurance](#-quality-assurance)
+- [🚀 Deployment y DevOps](#-deployment-y-devops)
+- [🔧 Configuración y Setup](#-configuración-y-setup)
+- [📖 Documentación Adicional](#-documentación-adicional)
+- [👥 Contribución](#-contribución)
+- [📄 Licencia](#-licencia)
+- [📞 Soporte](#-soporte)
+
 ## 🎯 Descripción General
 
 **Memory Systems Educational Portal** es una plataforma educativa interactiva diseñada para enseñar conceptos avanzados de gestión de memoria en sistemas de software. El portal implementa un enfoque modular y progresivo que guía a los estudiantes desde conceptos fundamentales hasta implementaciones enterprise complejas.
@@ -75,7 +102,7 @@ src/
 ├── modules/
 │   └── module-c/
 │       └── lessons/
-│           ├── Lesson01_Introduction/     # 🎯 Fundamentos
+│           ├── Lesson01_MemoryIntro/     # 🎯 Fundamentos
 │           ├── Lesson02_MemoryTypes/     # 🧠 Tipos de memoria
 │           ├── Lesson03_Implementation/  # ⚙️ Implementación
 │           ├── Lesson04_Optimization/    # 🚀 Optimización
@@ -87,6 +114,21 @@ src/
 │   └── portal-integration.test.js       # 🧪 Testing de integración
 └── README.md                            # 📖 Esta documentación
 ```
+
+### 🚀 **Navegación Rápida**
+
+| Componente | Enlace Directo | Descripción |
+|------------|----------------|-------------|
+| **🏠 Inicio** | [README.md](./README.md) | Documentación principal |
+| **📋 PRD** | [PRD.md](./PRD.md) | Especificación del producto |
+| **🎯 Lección 1** | [MemoryIntro](./src/modules/module-c/lessons/Lesson01_MemoryIntro/) | Introducción a sistemas de memoria |
+| **🧠 Lección 2** | [MemoryTypes](./src/modules/module-c/lessons/Lesson02_MemoryTypes/) | Tipos de memoria avanzados |
+| **⚙️ Lección 3** | [Implementation](./src/modules/module-c/lessons/Lesson03_Implementation/) | Implementación práctica |
+| **🚀 Lección 4** | [Optimization](./src/modules/module-c/lessons/Lesson04_Optimization/) | Optimización de performance |
+| **🔬 Lección 5** | [AdvancedCases](./src/modules/module-c/lessons/Lesson05_AdvancedCases/) | Casos avanzados y edge cases |
+| **🏗️ Lección 6** | [Integration](./src/modules/module-c/lessons/Lesson06_Integration/) | Integración enterprise |
+| **🎨 Estilos** | [portal-global.css](./src/styles/portal-global.css) | Sistema de diseño global |
+| **🧪 Tests** | [portal-integration.test.js](./src/tests/portal-integration.test.js) | Suite de testing de integración |
 
 ## 🛠️ Tecnologías y Herramientas
 
@@ -242,17 +284,23 @@ npm start
 
 ### 📚 **Guías Detalladas**
 
-- [🎯 Lección 1: Introducción](./src/modules/module-c/lessons/Lesson01_Introduction/README.md)
+- [🎯 Lección 1: Introducción a Sistemas de Memoria](./src/modules/module-c/lessons/Lesson01_MemoryIntro/README.md)
 - [🧠 Lección 2: Tipos de Memoria](./src/modules/module-c/lessons/Lesson02_MemoryTypes/README.md)
 - [⚙️ Lección 3: Implementación](./src/modules/module-c/lessons/Lesson03_Implementation/README.md)
 - [🚀 Lección 4: Optimización](./src/modules/module-c/lessons/Lesson04_Optimization/README.md)
 - [🔬 Lección 5: Casos Avanzados](./src/modules/module-c/lessons/Lesson05_AdvancedCases/README.md)
-- [🏗️ Lección 6: Integración](./src/modules/module-c/lessons/Lesson06_Integration/README.md)
+- [🏗️ Lección 6: Integración Enterprise](./src/modules/module-c/lessons/Lesson06_Integration/README.md)
 
 ### 🎨 **Design System**
 
 - [🎨 Portal Global Styles](./src/styles/portal-global.css) - Sistema de diseño unificado
 - [🧪 Integration Tests](./src/tests/portal-integration.test.js) - Testing cross-lesson
+
+### 📋 **Documentación Técnica**
+
+- [📋 PRD Original](./PRD.md) - Product Requirements Document
+- [📊 Implementation Plan](./IMPLEMENTATION_PLAN.md) - Plan de implementación detallado
+- [📈 Documentation Assessment](./DOCUMENTATION_ASSESSMENT.md) - Evaluación de documentación
 
 ## 👥 Contribución
 

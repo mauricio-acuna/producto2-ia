@@ -1184,17 +1184,534 @@ class LangGraphMemoryNode:
 };
 
 // Lección 3: Memoria de Largo Plazo
-const LongTermMemoryLesson = ({ onComplete }) => (
-  <div className="lesson">
-    <h2>💾 Memoria de Largo Plazo</h2>
-    <p>Almacenamiento persistente entre sesiones...</p>
-    <div className="lesson-actions">
-      <button className="btn btn-primary" onClick={onComplete}>
-        Completado
-      </button>
+const LongTermMemoryLesson = ({ onComplete }) => {
+  const longTermMemoryCode = `import sqlite3
+import numpy as np
+from typing import Dict, List, Any, Optional, Tuple
+from datetime import datetime, timedelta
+import json
+import hashlib
+from sentence_transformers import SentenceTransformer
+import chromadb
+from chromadb.config import Settings
+
+class LongTermMemory:
+    """Sistema de memoria persistente para agentes IA"""
+    
+    def __init__(self, db_path: str = "agent_memory.db", collection_name: str = "memories"):
+        self.db_path = db_path
+        self.collection_name = collection_name
+        
+        # Inicializar base de datos relacional
+        self._init_sql_db()
+        
+        # Inicializar base de datos vectorial
+        self.client = chromadb.PersistentClient(path="./chroma_db")
+        self.collection = self.client.get_or_create_collection(
+            name=collection_name,
+            metadata={"hnsw:space": "cosine"}
+        )
+        
+        # Modelo para embeddings
+        self.encoder = SentenceTransformer('all-MiniLM-L6-v2')
+    
+    def _init_sql_db(self):
+        """Inicializa la base de datos SQL"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS memories (
+                    id TEXT PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    content_type TEXT NOT NULL,
+                    created_at TIMESTAMP NOT NULL,
+                    last_accessed TIMESTAMP,
+                    access_count INTEGER DEFAULT 0,
+                    importance_score REAL DEFAULT 1.0,
+                    tags TEXT,
+                    metadata TEXT
+                )
+            """)
+            
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS relationships (
+                    id INTEGER PRIMARY KEY,
+                    memory_id_1 TEXT,
+                    memory_id_2 TEXT,
+                    relationship_type TEXT,
+                    strength REAL DEFAULT 1.0,
+                    created_at TIMESTAMP,
+                    FOREIGN KEY (memory_id_1) REFERENCES memories (id),
+                    FOREIGN KEY (memory_id_2) REFERENCES memories (id)
+                )
+            """)
+            
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(content_type);
+                CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance_score);
+                CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at);
+            """)
+    
+    def store_memory(self, content: str, content_type: str = "conversation", 
+                    tags: List[str] = None, metadata: Dict[str, Any] = None) -> str:
+        """Almacena un nuevo recuerdo"""
+        # Generar ID único
+        memory_id = hashlib.md5(f"{content}{datetime.now()}".encode()).hexdigest()
+        
+        # Calcular embedding
+        embedding = self.encoder.encode([content])[0].tolist()
+        
+        # Almacenar en base de datos vectorial
+        self.collection.add(
+            documents=[content],
+            embeddings=[embedding],
+            ids=[memory_id],
+            metadatas=[{
+                "content_type": content_type,
+                "created_at": datetime.now().isoformat(),
+                "tags": ",".join(tags or []),
+                **(metadata or {})
+            }]
+        )
+        
+        # Almacenar en base de datos relacional
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                INSERT INTO memories 
+                (id, content, content_type, created_at, tags, metadata)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                memory_id,
+                content,
+                content_type,
+                datetime.now(),
+                ",".join(tags or []),
+                json.dumps(metadata or {})
+            ))
+        
+        return memory_id
+    
+    def retrieve_similar(self, query: str, n_results: int = 5, 
+                        content_type: str = None) -> List[Dict[str, Any]]:
+        """Recupera recuerdos similares usando búsqueda semántica"""
+        # Construir filtros
+        where_clause = {}
+        if content_type:
+            where_clause["content_type"] = content_type
+        
+        # Buscar en base vectorial
+        results = self.collection.query(
+            query_texts=[query],
+            n_results=n_results,
+            where=where_clause if where_clause else None
+        )
+        
+        memories = []
+        for i, memory_id in enumerate(results['ids'][0]):
+            # Actualizar estadísticas de acceso
+            self._update_access_stats(memory_id)
+            
+            # Obtener información completa de SQL
+            memory_data = self._get_memory_from_sql(memory_id)
+            memory_data.update({
+                'similarity_score': 1 - results['distances'][0][i],
+                'content': results['documents'][0][i]
+            })
+            memories.append(memory_data)
+        
+        return memories
+    
+    def _update_access_stats(self, memory_id: str):
+        """Actualiza estadísticas de acceso"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                UPDATE memories 
+                SET last_accessed = ?, access_count = access_count + 1
+                WHERE id = ?
+            """, (datetime.now(), memory_id))
+    
+    def _get_memory_from_sql(self, memory_id: str) -> Dict[str, Any]:
+        """Obtiene datos completos de memoria desde SQL"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("""
+                SELECT content_type, created_at, last_accessed, 
+                       access_count, importance_score, tags, metadata
+                FROM memories WHERE id = ?
+            """, (memory_id,))
+            row = cursor.fetchone()
+            
+            if row:
+                return {
+                    'id': memory_id,
+                    'content_type': row[0],
+                    'created_at': row[1],
+                    'last_accessed': row[2],
+                    'access_count': row[3],
+                    'importance_score': row[4],
+                    'tags': row[5].split(',') if row[5] else [],
+                    'metadata': json.loads(row[6]) if row[6] else {}
+                }
+            return {}
+
+# Ejemplo de uso del sistema de memoria de largo plazo
+memory_system = LongTermMemory()
+
+# Almacenar diferentes tipos de información
+conversation_id = memory_system.store_memory(
+    "El usuario prefiere explicaciones técnicas detalladas",
+    content_type="user_preference",
+    tags=["preferencias", "comunicación"]
+)
+
+fact_id = memory_system.store_memory(
+    "Las redes neuronales transformer fueron introducidas en 2017",
+    content_type="knowledge",
+    tags=["IA", "historia", "transformer"]
+)
+
+context_id = memory_system.store_memory(
+    "Proyecto: Desarrollo de chatbot para atención al cliente",
+    content_type="project_context",
+    tags=["proyecto", "chatbot", "contexto"]
+)
+
+# Búsqueda semántica
+similar_memories = memory_system.retrieve_similar(
+    "¿Cómo explicar conceptos técnicos al usuario?",
+    n_results=3
+)
+
+print("Recuerdos relevantes:")
+for memory in similar_memories:
+    print(f"Similitud: {memory['similarity_score']:.3f}")
+    print(f"Tipo: {memory['content_type']}")
+    print(f"Contenido: {memory['content']}")
+    print(f"Accesos: {memory['access_count']}")
+    print("---")`;
+
+  const vectorDbCode = `# Configuración de ChromaDB para almacenamiento vectorial
+import chromadb
+from chromadb.config import Settings
+
+# Cliente persistente
+client = chromadb.PersistentClient(path="./vector_db")
+
+# Crear colección con configuración específica
+collection = client.get_or_create_collection(
+    name="agent_memories",
+    metadata={
+        "hnsw:space": "cosine",  # Métrica de distancia
+        "hnsw:M": 16,           # Conectividad del grafo
+        "hnsw:ef_construction": 200,  # Tamaño de la lista de candidatos
+        "hnsw:ef_search": 100   # Parámetro de búsqueda
+    }
+)
+
+# Función para indexar documentos
+def index_documents(documents, metadatas=None):
+    """Indexa documentos en la base vectorial"""
+    embeddings = encoder.encode(documents)
+    ids = [f"doc_{i}" for i in range(len(documents))]
+    
+    collection.add(
+        documents=documents,
+        embeddings=embeddings.tolist(),
+        ids=ids,
+        metadatas=metadatas or [{}] * len(documents)
+    )
+
+# Búsqueda híbrida (semántica + filtros)
+def hybrid_search(query, filters=None, n_results=5):
+    """Combina búsqueda semántica con filtros de metadatos"""
+    return collection.query(
+        query_texts=[query],
+        n_results=n_results,
+        where=filters  # Filtros por metadatos
+    )
+
+# Ejemplo de búsqueda con filtros
+results = hybrid_search(
+    query="programación en Python",
+    filters={"content_type": "tutorial"},
+    n_results=3
+)`;
+
+  const memoryOptimizationCode = `class MemoryOptimizer:
+    """Optimiza y gestiona la memoria de largo plazo"""
+    
+    def __init__(self, memory_system: LongTermMemory):
+        self.memory = memory_system
+        self.decay_factor = 0.95  # Factor de decaimiento de importancia
+        
+    def optimize_memory(self):
+        """Ejecuta rutinas de optimización de memoria"""
+        self._decay_importance()
+        self._consolidate_similar_memories()
+        self._archive_old_memories()
+        self._update_memory_relationships()
+    
+    def _decay_importance(self):
+        """Reduce la importancia de recuerdos no accedidos"""
+        cutoff_date = datetime.now() - timedelta(days=30)
+        
+        with sqlite3.connect(self.memory.db_path) as conn:
+            conn.execute("""
+                UPDATE memories 
+                SET importance_score = importance_score * ?
+                WHERE (last_accessed IS NULL OR last_accessed < ?)
+                AND importance_score > 0.1
+            """, (self.decay_factor, cutoff_date))
+    
+    def _consolidate_similar_memories(self):
+        """Consolida recuerdos muy similares"""
+        # Buscar duplicados semánticos
+        all_memories = self._get_all_memories()
+        
+        for i, memory1 in enumerate(all_memories):
+            similar = self.memory.retrieve_similar(
+                memory1['content'], 
+                n_results=3
+            )
+            
+            for sim_memory in similar[1:]:  # Excluir el mismo
+                if sim_memory['similarity_score'] > 0.95:
+                    self._merge_memories(memory1['id'], sim_memory['id'])
+    
+    def _archive_old_memories(self):
+        """Archiva recuerdos antiguos de baja importancia"""
+        cutoff_date = datetime.now() - timedelta(days=90)
+        
+        with sqlite3.connect(self.memory.db_path) as conn:
+            # Mover a tabla de archivo
+            conn.execute("""
+                INSERT INTO archived_memories 
+                SELECT * FROM memories 
+                WHERE created_at < ? AND importance_score < 0.2
+            """, (cutoff_date,))
+            
+            # Eliminar de memoria activa
+            conn.execute("""
+                DELETE FROM memories 
+                WHERE created_at < ? AND importance_score < 0.2
+            """, (cutoff_date,))
+    
+    def _update_memory_relationships(self):
+        """Actualiza relaciones entre recuerdos"""
+        # Implementar detección de patrones y relaciones
+        pass`;
+
+  return (
+    <div className="lesson">
+      <h2>💾 Memoria de Largo Plazo</h2>
+      
+      <div className="lesson-intro">
+        <p>
+          La memoria de largo plazo permite a los agentes IA mantener información entre sesiones, 
+          construir conocimiento acumulativo y personalizar sus respuestas basándose en 
+          interacciones pasadas.
+        </p>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🏗️ Arquitectura de Memoria Persistente</h3>
+        <p>
+          Un sistema robusto de memoria de largo plazo requiere múltiples componentes trabajando 
+          en conjunto para almacenar, indexar y recuperar información de manera eficiente.
+        </p>
+
+        <div className="memory-architecture">
+          <div className="architecture-layer">
+            <h4>🗃️ Capa de Almacenamiento</h4>
+            <ul>
+              <li><strong>Base de Datos Relacional:</strong> Metadatos, relaciones, estadísticas</li>
+              <li><strong>Base de Datos Vectorial:</strong> Embeddings para búsqueda semántica</li>
+              <li><strong>Almacenamiento de Archivos:</strong> Documentos, imágenes, audio</li>
+            </ul>
+          </div>
+          
+          <div className="architecture-layer">
+            <h4>🔍 Capa de Indexación</h4>
+            <ul>
+              <li><strong>Índices Semánticos:</strong> Embeddings de texto</li>
+              <li><strong>Índices Temporales:</strong> Ordenamiento cronológico</li>
+              <li><strong>Índices de Metadatos:</strong> Filtrado por atributos</li>
+            </ul>
+          </div>
+          
+          <div className="architecture-layer">
+            <h4>🎯 Capa de Recuperación</h4>
+            <ul>
+              <li><strong>Búsqueda Híbrida:</strong> Semántica + exacta</li>
+              <li><strong>Filtrado Inteligente:</strong> Relevancia contextual</li>
+              <li><strong>Ranking Adaptativo:</strong> Importancia dinámica</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>💻 Implementación del Sistema</h3>
+        <p>
+          Veamos cómo implementar un sistema completo de memoria de largo plazo que combine 
+          almacenamiento relacional con búsqueda vectorial:
+        </p>
+        
+        <CodeBlock code={longTermMemoryCode} language="python" />
+      </div>
+
+      <div className="lesson-section">
+        <h3>🔍 Bases de Datos Vectoriales</h3>
+        <p>
+          Las bases de datos vectoriales permiten búsqueda semántica eficiente usando embeddings. 
+          ChromaDB es una excelente opción para prototipos y aplicaciones medianas:
+        </p>
+        
+        <CodeBlock code={vectorDbCode} language="python" />
+
+        <div className="vector-db-comparison">
+          <h4>📊 Comparación de Bases de Datos Vectoriales</h4>
+          <div className="comparison-grid">
+            <div className="db-option">
+              <h5>ChromaDB</h5>
+              <ul>
+                <li>✅ Fácil de usar</li>
+                <li>✅ Almacenamiento local</li>
+                <li>✅ Filtros de metadatos</li>
+                <li>⚠️ Escalabilidad limitada</li>
+              </ul>
+            </div>
+            <div className="db-option">
+              <h5>Pinecone</h5>
+              <ul>
+                <li>✅ Altamente escalable</li>
+                <li>✅ Servicio gestionado</li>
+                <li>✅ Baja latencia</li>
+                <li>⚠️ Requiere suscripción</li>
+              </ul>
+            </div>
+            <div className="db-option">
+              <h5>Weaviate</h5>
+              <ul>
+                <li>✅ Open source</li>
+                <li>✅ GraphQL API</li>
+                <li>✅ Búsqueda híbrida</li>
+                <li>⚠️ Configuración compleja</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>⚡ Optimización de Memoria</h3>
+        <p>
+          Un sistema de memoria efectivo debe gestionar automáticamente el crecimiento 
+          y optimizar el rendimiento a lo largo del tiempo:
+        </p>
+        
+        <CodeBlock code={memoryOptimizationCode} language="python" />
+
+        <div className="optimization-strategies">
+          <h4>🎯 Estrategias de Optimización</h4>
+          <div className="strategies-grid">
+            <div className="strategy-card">
+              <h5>⏰ Decaimiento Temporal</h5>
+              <p>Reduce la importancia de recuerdos antiguos no accedidos</p>
+              <ul>
+                <li>Factor de decaimiento configurable</li>
+                <li>Preserva recuerdos importantes</li>
+                <li>Ejecución automática periódica</li>
+              </ul>
+            </div>
+            
+            <div className="strategy-card">
+              <h5>🔄 Consolidación</h5>
+              <p>Combina recuerdos similares para reducir redundancia</p>
+              <ul>
+                <li>Detección de duplicados semánticos</li>
+                <li>Fusión inteligente de metadatos</li>
+                <li>Preservación de relaciones</li>
+              </ul>
+            </div>
+            
+            <div className="strategy-card">
+              <h5>📦 Archivado</h5>
+              <p>Mueve recuerdos antiguos a almacenamiento de largo plazo</p>
+              <ul>
+                <li>Criterios de edad e importancia</li>
+                <li>Acceso bajo demanda</li>
+                <li>Compresión de datos</li>
+              </ul>
+            </div>
+            
+            <div className="strategy-card">
+              <h5>🕸️ Relaciones</h5>
+              <p>Mantiene conexiones entre recuerdos relacionados</p>
+              <ul>
+                <li>Detección automática de patrones</li>
+                <li>Fortalecimiento por uso</li>
+                <li>Propagación de importancia</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🔒 Consideraciones de Privacidad y Seguridad</h3>
+        <div className="privacy-considerations">
+          <div className="privacy-item">
+            <h4>🔐 Encriptación</h4>
+            <p>Todos los datos sensibles deben estar encriptados en reposo y en tránsito</p>
+          </div>
+          <div className="privacy-item">
+            <h4>🗑️ Derecho al Olvido</h4>
+            <p>Implementar mecanismos para eliminar completamente información del usuario</p>
+          </div>
+          <div className="privacy-item">
+            <h4>🏷️ Clasificación de Datos</h4>
+            <p>Categorizar información por sensibilidad y aplicar políticas apropiadas</p>
+          </div>
+          <div className="privacy-item">
+            <h4>⏱️ Retención Limitada</h4>
+            <p>Establecer períodos máximos de retención para diferentes tipos de datos</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>📊 Métricas de Rendimiento</h3>
+        <div className="performance-metrics">
+          <div className="metric-item">
+            <h4>⚡ Latencia de Búsqueda</h4>
+            <p>Tiempo promedio para recuperar recuerdos relevantes</p>
+            <span className="metric-target">Objetivo: &lt; 100ms</span>
+          </div>
+          <div className="metric-item">
+            <h4>🎯 Precisión de Recuperación</h4>
+            <p>Relevancia de los recuerdos recuperados</p>
+            <span className="metric-target">Objetivo: &gt; 85%</span>
+          </div>
+          <div className="metric-item">
+            <h4>💾 Eficiencia de Almacenamiento</h4>
+            <p>Ratio de compresión y deduplicación</p>
+            <span className="metric-target">Objetivo: 60% reducción</span>
+          </div>
+          <div className="metric-item">
+            <h4>🔄 Tasa de Acceso</h4>
+            <p>Frecuencia de uso de recuerdos almacenados</p>
+            <span className="metric-target">Objetivo: &gt; 40%</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-actions">
+        <button className="btn btn-primary" onClick={onComplete}>
+          Memoria Persistente Implementada ✓
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Lección 4: Resúmenes Inteligentes
 const IntelligentSummariesLesson = ({ onComplete }) => (

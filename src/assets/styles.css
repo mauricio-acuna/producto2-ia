@@ -2261,6 +2261,264 @@ body {
   color: #92400e;
 }
 
+/* Estilos específicos para Lección 3: Memoria de Largo Plazo */
+.memory-architecture {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.architecture-layer {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #0ea5e9;
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+}
+
+.architecture-layer h4 {
+  color: #0369a1;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.architecture-layer ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.architecture-layer li {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.architecture-layer li::before {
+  content: "▶";
+  color: #0ea5e9;
+  font-size: 0.8rem;
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+}
+
+.architecture-layer strong {
+  color: #0c4a6e;
+  font-weight: 600;
+}
+
+.vector-db-comparison {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #fafafa;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.db-option {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.db-option:hover {
+  border-color: #6b7280;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.db-option h5 {
+  color: #374151;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.db-option ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.db-option li {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.db-option li::before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 0.8rem;
+}
+
+.optimization-strategies {
+  margin: 2rem 0;
+}
+
+.strategies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.strategy-card {
+  background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.strategy-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2);
+  border-color: #d97706;
+}
+
+.strategy-card h5 {
+  color: #92400e;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.strategy-card p {
+  color: #78350f;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.strategy-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.strategy-card li {
+  color: #a16207;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+  position: relative;
+}
+
+.strategy-card li::before {
+  content: "•";
+  color: #f59e0b;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.privacy-considerations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.privacy-item {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #f87171;
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.privacy-item:hover {
+  border-color: #ef4444;
+  box-shadow: 0 6px 20px rgba(248, 113, 113, 0.15);
+}
+
+.privacy-item h4 {
+  color: #dc2626;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.privacy-item p {
+  color: #991b1b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.performance-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.metric-item {
+  background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%);
+  border: 1px solid #3b82f6;
+  border-radius: 10px;
+  padding: 1.25rem;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.metric-item:hover {
+  border-color: #2563eb;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+.metric-item h4 {
+  color: #1d4ed8;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metric-item p {
+  color: #1e40af;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.metric-target {
+  background: #1e40af;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
 /* Responsive design for Module C additional components */
 @media (max-width: 768px) {
   .memory-characteristics {
@@ -2272,6 +2530,26 @@ body {
   }
   
   .optimization-strategies {
+    grid-template-columns: 1fr;
+  }
+  
+  .architecture-layer {
+    padding: 1rem;
+  }
+  
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .strategies-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .privacy-considerations {
+    grid-template-columns: 1fr;
+  }
+  
+  .performance-metrics {
     grid-template-columns: 1fr;
   }
 }

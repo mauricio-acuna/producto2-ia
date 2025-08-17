@@ -77,14 +77,14 @@ const LandingPage = () => {
               <Link to="/modulo-b" className="module-link">Comenzar →</Link>
             </div>
             
-            <div className="module-card coming-soon">
+            <div className="module-card">
               <div className="module-header">
                 <h3>Módulo C</h3>
                 <span className="module-tag">Memoria</span>
               </div>
               <h4>Memoria de Agentes</h4>
               <p>Short-term (resúmenes), long-term (chunks indexados)</p>
-              <span className="coming-soon-tag">Próximamente</span>
+              <Link to="/modulo-c" className="module-link">Comenzar →</Link>
             </div>
             
             <div className="module-card coming-soon">

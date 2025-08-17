@@ -1904,3 +1904,374 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* === Módulo C: Memoria - Styles === */
+
+/* Memory comparison cards */
+.memory-comparison {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.comparison-card {
+  border: 2px solid;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.comparison-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.without-memory {
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+  border-color: #ef4444;
+}
+
+.with-memory {
+  background: linear-gradient(135deg, #f0fdf4 0%, #bbf7d0 100%);
+  border-color: #22c55e;
+}
+
+.comparison-card h4 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.without-memory h4 {
+  color: #dc2626;
+}
+
+.with-memory h4 {
+  color: #16a34a;
+}
+
+.comparison-card ul {
+  text-align: left;
+  margin: 1rem 0;
+}
+
+.comparison-card li {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.without-memory li::before {
+  content: "❌";
+  position: absolute;
+  left: 0;
+}
+
+.with-memory li::before {
+  content: "✅";
+  position: absolute;
+  left: 0;
+}
+
+/* Memory types grid */
+.memory-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.memory-type-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.memory-type-card:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+}
+
+.memory-type-card h4 {
+  color: #7c3aed;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.memory-type-card p {
+  color: #64748b;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.memory-type-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.memory-type-card li {
+  padding: 0.25rem 0;
+  color: #475569;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.memory-type-card li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #8b5cf6;
+  font-weight: bold;
+}
+
+/* Benefits grid */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.benefit-card {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.benefit-card:hover {
+  border-color: #06b6d4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+}
+
+.benefit-card h4 {
+  color: #0891b2;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.benefit-card p {
+  color: #475569;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Challenges list */
+.challenges-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.challenge-item {
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.challenge-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+.challenge-item h4 {
+  color: #d97706;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+
+.challenge-item p {
+  color: #92400e;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Responsive design for Module C */
+@media (max-width: 768px) {
+  .memory-comparison {
+    grid-template-columns: 1fr;
+  }
+  
+  .memory-types-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .benefits-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .challenges-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Memory characteristics */
+.memory-characteristics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.characteristic-card {
+  background: #f0f9ff;
+  border: 2px solid #0ea5e9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.characteristic-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+}
+
+.characteristic-card h4 {
+  color: #0369a1;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.characteristic-card p {
+  color: #0c4a6e;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Components grid */
+.components-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.component-card {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.component-card:hover {
+  border-color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.15);
+}
+
+.component-card h4 {
+  color: #059669;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.component-card p {
+  color: #6b7280;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.component-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.component-card li {
+  padding: 0.25rem 0;
+  color: #374151;
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.component-card li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: #10b981;
+}
+
+/* Optimization strategies */
+.optimization-strategies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.strategy-card {
+  background: #fefefe;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.strategy-card:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
+
+.strategy-card h4 {
+  color: #d97706;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.strategy-card p {
+  color: #374151;
+  margin-bottom: 1rem;
+}
+
+.strategy-details {
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 1rem;
+  font-size: 0.875rem;
+}
+
+.strategy-details strong {
+  color: #92400e;
+}
+
+/* Responsive design for Module C additional components */
+@media (max-width: 768px) {
+  .memory-characteristics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .components-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .optimization-strategies {
+    grid-template-columns: 1fr;
+  }
+}

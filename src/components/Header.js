@@ -14,6 +14,7 @@ const Header = () => {
               <li><Link to="/">Inicio</Link></li>
               <li><Link to="/modulo-a">Módulo A: LangGraph</Link></li>
               <li><Link to="/modulo-b">Módulo B: Tools Seguras</Link></li>
+              <li><Link to="/modulo-c">Módulo C: Memoria</Link></li>
               <li><a href="#modules">Todos los Módulos</a></li>
               <li><a href="#capstone">Capstone</a></li>
             </ul>

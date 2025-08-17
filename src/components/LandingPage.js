@@ -67,14 +67,14 @@ const LandingPage = () => {
               <Link to="/modulo-a" className="module-link">Comenzar →</Link>
             </div>
             
-            <div className="module-card coming-soon">
+            <div className="module-card">
               <div className="module-header">
                 <h3>Módulo B</h3>
                 <span className="module-tag">Seguridad</span>
               </div>
               <h4>Tools Seguras</h4>
               <p>Contratos, validación de inputs, safety.yaml básico</p>
-              <span className="coming-soon-tag">Próximamente</span>
+              <Link to="/modulo-b" className="module-link">Comenzar →</Link>
             </div>
             
             <div className="module-card coming-soon">

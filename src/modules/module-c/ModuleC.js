@@ -324,6 +324,108 @@ print(f"Información de marketing: {marketing_info}")`;
       </div>
 
       <div className="lesson-section">
+        <h3>🎯 Caso de Uso Real: Asistente de Atención al Cliente</h3>
+        <p>
+          Imaginemos un asistente de atención al cliente que debe recordar información 
+          del cliente a lo largo de múltiples interacciones. Veamos cómo la memoria 
+          transforma completamente la experiencia:
+        </p>
+
+        <div className="real-world-example">
+          <div className="scenario-card">
+            <h4>📞 Primera Llamada (Lunes)</h4>
+            <div className="conversation-flow">
+              <div className="message user-message">
+                <strong>Cliente:</strong> "Hola, soy María González. Tengo un problema con mi pedido #12345"
+              </div>
+              <div className="message agent-message">
+                <strong>Agente con Memoria:</strong> "Hola María, veo que es su primera vez contactando sobre el pedido #12345. ¿Cuál es el problema específico?"
+              </div>
+              <div className="memory-note">
+                💾 <strong>Memoria almacena:</strong> Nombre cliente, pedido #12345, es primera llamada sobre este tema
+              </div>
+            </div>
+          </div>
+
+          <div className="scenario-card">
+            <h4>📧 Email de Seguimiento (Martes)</h4>
+            <div className="conversation-flow">
+              <div className="message user-message">
+                <strong>María:</strong> "¿Hay actualizaciones sobre mi problema de ayer?"
+              </div>
+              <div className="message agent-message">
+                <strong>Agente con Memoria:</strong> "Hola de nuevo María. Sobre el problema con su pedido #12345 que discutimos ayer por teléfono, he estado trabajando con nuestro equipo de logística..."
+              </div>
+              <div className="memory-note">
+                💾 <strong>Memoria reconoce:</strong> Cliente anterior, problema en curso, canal diferente, continúa contexto
+              </div>
+            </div>
+          </div>
+
+          <div className="scenario-card">
+            <h4>💬 Chat en Línea (Miércoles)</h4>
+            <div className="conversation-flow">
+              <div className="message user-message">
+                <strong>María:</strong> "Soy María González, ¿el pedido ya fue enviado?"
+              </div>
+              <div className="message agent-message">
+                <strong>Agente con Memoria:</strong> "¡Excelentes noticias María! Su pedido #12345 fue enviado esta mañana. Basándome en nuestras conversaciones anteriores, quería informarle que..."
+              </div>
+              <div className="memory-note">
+                💾 <strong>Memoria utiliza:</strong> Historial completo, preferencias de comunicación, contexto del problema resuelto
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="impact-comparison">
+          <div className="without-memory">
+            <h5>❌ Sin Memoria (Experiencia Fragmentada)</h5>
+            <ul>
+              <li>Cliente debe repetir información en cada contacto</li>
+              <li>Agente no conoce historial previo</li>
+              <li>Resolución lenta e ineficiente</li>
+              <li>Experiencia frustrante para el cliente</li>
+              <li>Mayor tiempo de resolución</li>
+            </ul>
+          </div>
+          
+          <div className="with-memory">
+            <h5>✅ Con Memoria (Experiencia Continua)</h5>
+            <ul>
+              <li>Reconocimiento inmediato del cliente</li>
+              <li>Contexto completo en todas las interacciones</li>
+              <li>Resolución rápida y personalizada</li>
+              <li>Experiencia fluida y profesional</li>
+              <li>Construcción de relación a largo plazo</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="metrics-showcase">
+          <h4>📊 Métricas del Impacto de la Memoria</h4>
+          <div className="metrics-grid">
+            <div className="metric-item">
+              <div className="metric-value">65%</div>
+              <div className="metric-label">Reducción en tiempo de resolución</div>
+            </div>
+            <div className="metric-item">
+              <div className="metric-value">40%</div>
+              <div className="metric-label">Menos repetición de información</div>
+            </div>
+            <div className="metric-item">
+              <div className="metric-value">85%</div>
+              <div className="metric-label">Mejora en satisfacción del cliente</div>
+            </div>
+            <div className="metric-item">
+              <div className="metric-value">3x</div>
+              <div className="metric-label">Mayor eficiencia del agente</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
         <h3>Ejemplo: Agente Sin vs Con Memoria</h3>
         
         <CodeBlock
@@ -1074,6 +1176,219 @@ class LangGraphMemoryNode:
           title="short_term_memory.py"
           code={shortTermMemoryCode}
         />
+      </div>
+
+      <div className="lesson-section">
+        <h3>🔍 Extractores de Entidades Avanzados</h3>
+        <p>
+          Los extractores de entidades son fundamentales para identificar información 
+          importante en las conversaciones. Veamos implementaciones detalladas para 
+          diferentes tipos de entidades:
+        </p>
+
+        <div className="entity-extractors">
+          <div className="extractor-card">
+            <h4>👤 Extractor de Personas</h4>
+            <div className="extractor-example">
+              <div className="code-block">
+                <pre><code>{`def extract_people(text):
+    """Extrae nombres de personas y sus contextos"""
+    import re
+    import spacy
+    
+    nlp = spacy.load("es_core_news_sm")
+    doc = nlp(text)
+    
+    people = []
+    for ent in doc.ents:
+        if ent.label_ == "PER":
+            context = text[max(0, ent.start_char-50):ent.end_char+50]
+            people.append({
+                "name": ent.text,
+                "context": context.strip(),
+                "position": (ent.start_char, ent.end_char),
+                "confidence": ent._.confidence if hasattr(ent._, 'confidence') else 0.9
+            })
+    
+    return people
+
+# Ejemplo de uso:
+text = "María García del departamento de marketing me comentó que Juan Pérez aprobó el proyecto"
+people = extract_people(text)
+# Resultado: [
+#   {"name": "María García", "context": "...departamento de marketing...", ...},
+#   {"name": "Juan Pérez", "context": "...aprobó el proyecto", ...}
+# ]`}</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <div className="extractor-card">
+            <h4>🏢 Extractor de Organizaciones</h4>
+            <div className="extractor-example">
+              <div className="code-block">
+                <pre><code>{`def extract_organizations(text):
+    """Extrae organizaciones, empresas y departamentos"""
+    import re
+    
+    # Patrones para diferentes tipos de organizaciones
+    patterns = {
+        'companies': r'\\b(?:S\\.A\\.|S\\.L\\.|Corp\\.|Inc\\.|Ltd\\.|Microsoft|Google|Apple)\\b',
+        'departments': r'\\b(?:departamento de|división de|área de)\\s+(\\w+)\\b',
+        'institutions': r'\\b(?:Universidad|Instituto|Ministerio|Hospital)\\s+([\\w\\s]+)\\b'
+    }
+    
+    organizations = []
+    
+    for org_type, pattern in patterns.items():
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            organizations.append({
+                "name": match.group().strip(),
+                "type": org_type,
+                "position": match.span(),
+                "context": text[max(0, match.start()-30):match.end()+30]
+            })
+    
+    return organizations
+
+# Ejemplo:
+text = "Trabajo en Microsoft en el departamento de IA"
+orgs = extract_organizations(text)
+# Resultado: [
+#   {"name": "Microsoft", "type": "companies", ...},
+#   {"name": "departamento de IA", "type": "departments", ...}
+# ]`}</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <div className="extractor-card">
+            <h4>💰 Extractor de Información Financiera</h4>
+            <div className="extractor-example">
+              <div className="code-block">
+                <pre><code>{`def extract_financial_info(text):
+    """Extrae montos, números de cuenta, fechas de pago"""
+    import re
+    from datetime import datetime
+    
+    financial_data = []
+    
+    # Montos monetarios
+    money_pattern = r'\\$?([0-9]{1,3}(?:,?[0-9]{3})*)(?:\\.[0-9]{2})?\\s*(?:USD|EUR|€|\\$)?'
+    money_matches = re.finditer(money_pattern, text)
+    
+    for match in money_matches:
+        amount_str = match.group(1).replace(',', '')
+        try:
+            amount = float(amount_str)
+            financial_data.append({
+                "type": "amount",
+                "value": amount,
+                "original_text": match.group(),
+                "position": match.span()
+            })
+        except ValueError:
+            continue
+    
+    # Números de cuenta/tarjeta (parcialmente enmascarados)
+    account_pattern = r'\\b(?:cuenta|tarjeta|card)\\s*(?:n[úu]mero)?\\s*:?\\s*([\\d\\*]{4}[\\s\\-]?[\\d\\*]{4}[\\s\\-]?[\\d\\*]{4}[\\s\\-]?[\\d\\*]{4})\\b'
+    account_matches = re.finditer(account_pattern, text, re.IGNORECASE)
+    
+    for match in account_matches:
+        financial_data.append({
+            "type": "account_number",
+            "value": match.group(1),
+            "masked": True,
+            "position": match.span()
+        })
+    
+    return financial_data`}</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <div className="extractor-card">
+            <h4>📅 Extractor de Fechas y Horarios</h4>
+            <div className="extractor-example">
+              <div className="code-block">
+                <pre><code>{`def extract_temporal_info(text):
+    """Extrae fechas, horarios y períodos temporales"""
+    import re
+    from datetime import datetime, timedelta
+    import dateutil.parser as date_parser
+    
+    temporal_info = []
+    
+    # Fechas absolutas
+    date_patterns = [
+        r'\\b\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b',
+        r'\\b\\d{4}[/-]\\d{1,2}[/-]\\d{1,2}\\b',
+        r'\\b(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\\s+\\d{1,2},?\\s+\\d{4}\\b'
+    ]
+    
+    for pattern in date_patterns:
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            try:
+                parsed_date = date_parser.parse(match.group(), fuzzy=True)
+                temporal_info.append({
+                    "type": "absolute_date",
+                    "value": parsed_date,
+                    "original_text": match.group(),
+                    "position": match.span()
+                })
+            except:
+                continue
+    
+    # Fechas relativas
+    relative_patterns = {
+        r'\\b(?:hoy|today)\\b': 0,
+        r'\\b(?:mañana|tomorrow)\\b': 1,
+        r'\\b(?:ayer|yesterday)\\b': -1,
+        r'\\b(?:la próxima semana|next week)\\b': 7,
+        r'\\b(?:la semana pasada|last week)\\b': -7
+    }
+    
+    for pattern, days_offset in relative_patterns.items():
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            target_date = datetime.now() + timedelta(days=days_offset)
+            temporal_info.append({
+                "type": "relative_date",
+                "value": target_date,
+                "offset_days": days_offset,
+                "original_text": match.group(),
+                "position": match.span()
+            })
+    
+    return temporal_info`}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="extraction-tips">
+          <h4>💡 Mejores Prácticas para Extracción de Entidades</h4>
+          <div className="tips-grid">
+            <div className="tip-card">
+              <h5>🎯 Precisión vs Recall</h5>
+              <p>Balancea entre encontrar todas las entidades (recall) y evitar falsos positivos (precisión)</p>
+            </div>
+            <div className="tip-card">
+              <h5>🔄 Validación Cruzada</h5>
+              <p>Usa múltiples métodos (regex + NLP + heurísticas) para mayor confiabilidad</p>
+            </div>
+            <div className="tip-card">
+              <h5>📊 Scores de Confianza</h5>
+              <p>Asigna scores de confianza a cada entidad extraída para filtrar resultados</p>
+            </div>
+            <div className="tip-card">
+              <h5>🔒 Privacidad</h5>
+              <p>Enmascara o anonimiza información sensible como números de cuenta</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="lesson-section">
@@ -2399,6 +2714,267 @@ print(f"Entidades: {summary_result['entities']}")`;
       </div>
 
       <div className="lesson-section">
+        <h3>🧠 Selección Inteligente del Tipo de Resumen</h3>
+        <p>
+          El sistema debe elegir automáticamente el tipo de resumen más apropiado según 
+          el contexto, contenido y objetivo. Veamos cómo implementar esta lógica de selección:
+        </p>
+
+        <div className="summary-selection-system">
+          <div className="selection-flow">
+            <h4>🔄 Flujo de Decisión</h4>
+            <div className="decision-tree">
+              <div className="decision-node">
+                <div className="decision-question">¿Cuál es la longitud del contenido?</div>
+                <div className="decision-branches">
+                  <div className="branch">
+                    <span className="branch-condition">&lt; 500 palabras</span>
+                    <span className="branch-result">→ Resumen Extractivo</span>
+                  </div>
+                  <div className="branch">
+                    <span className="branch-condition">500-2000 palabras</span>
+                    <span className="branch-result">→ Resumen Híbrido</span>
+                  </div>
+                  <div className="branch">
+                    <span className="branch-condition">&gt; 2000 palabras</span>
+                    <span className="branch-result">→ Resumen Abstractivo</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="decision-node">
+                <div className="decision-question">¿Cuál es el tipo de contenido?</div>
+                <div className="decision-branches">
+                  <div className="branch">
+                    <span className="branch-condition">Conversación casual</span>
+                    <span className="branch-result">→ Resumen Temático</span>
+                  </div>
+                  <div className="branch">
+                    <span className="branch-condition">Reunión de trabajo</span>
+                    <span className="branch-result">→ Resumen de Decisiones</span>
+                  </div>
+                  <div className="branch">
+                    <span className="branch-condition">Soporte técnico</span>
+                    <span className="branch-result">→ Resumen de Soluciones</span>
+                  </div>
+                  <div className="branch">
+                    <span className="branch-condition">Documentación</span>
+                    <span className="branch-result">→ Resumen Estructurado</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="decision-node">
+                <div className="decision-question">¿Cuál es la urgencia?</div>
+                <div className="decision-branches">
+                  <div className="branch">
+                    <span className="branch-condition">Alta urgencia</span>
+                    <span className="branch-result">→ Resumen Bullet Points</span>
+                  </div>
+                  <div className="branch">
+                    <span className="branch-condition">Media urgencia</span>
+                    <span className="branch-result">→ Resumen Estándar</span>
+                  </div>
+                  <div className="branch">
+                    <span className="branch-condition">Baja urgencia</span>
+                    <span className="branch-result">→ Resumen Detallado</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="implementation-example">
+            <h4>⚙️ Implementación del Selector</h4>
+            <div className="code-block">
+              <pre><code>{`class SummaryTypeSelector:
+    def __init__(self):
+        self.content_analyzers = {
+            'length': self._analyze_length,
+            'complexity': self._analyze_complexity,
+            'domain': self._analyze_domain,
+            'urgency': self._analyze_urgency,
+            'audience': self._analyze_audience
+        }
+        
+        # Matriz de decisión: contexto -> tipo de resumen
+        self.decision_matrix = {
+            ('short', 'simple', 'casual', 'low', 'general'): 'extractive',
+            ('medium', 'moderate', 'business', 'medium', 'professional'): 'hybrid',
+            ('long', 'complex', 'technical', 'high', 'expert'): 'abstractive_detailed',
+            ('any', 'any', 'support', 'high', 'any'): 'solution_focused',
+            ('any', 'any', 'meeting', 'any', 'business'): 'decision_focused'
+        }
+    
+    def select_summary_type(self, content: str, metadata: dict = None) -> dict:
+        """Selecciona el tipo de resumen más apropiado"""
+        
+        # Analizar todas las dimensiones
+        analysis = {}
+        for dimension, analyzer in self.content_analyzers.items():
+            analysis[dimension] = analyzer(content, metadata)
+        
+        # Encontrar la mejor coincidencia en la matriz
+        best_match = self._find_best_match(analysis)
+        
+        # Configurar parámetros específicos
+        config = self._configure_summary_params(best_match, analysis)
+        
+        return {
+            'type': best_match,
+            'config': config,
+            'reasoning': self._explain_selection(analysis, best_match),
+            'confidence': self._calculate_confidence(analysis, best_match)
+        }
+    
+    def _analyze_length(self, content: str, metadata: dict) -> str:
+        """Analiza la longitud del contenido"""
+        word_count = len(content.split())
+        if word_count < 200:
+            return 'short'
+        elif word_count < 1000:
+            return 'medium'
+        else:
+            return 'long'
+    
+    def _analyze_complexity(self, content: str, metadata: dict) -> str:
+        """Analiza la complejidad del contenido"""
+        # Métricas de complejidad
+        avg_sentence_length = len(content.split()) / (content.count('.') + 1)
+        technical_terms = len(re.findall(r'\\b(?:API|SDK|framework|algorithm|implementation)\\b', content, re.I))
+        
+        complexity_score = avg_sentence_length * 0.1 + technical_terms * 0.3
+        
+        if complexity_score < 2:
+            return 'simple'
+        elif complexity_score < 5:
+            return 'moderate'
+        else:
+            return 'complex'
+    
+    def _analyze_domain(self, content: str, metadata: dict) -> str:
+        """Identifica el dominio/contexto del contenido"""
+        domain_keywords = {
+            'technical': ['código', 'API', 'bug', 'error', 'implementación', 'desarrollo'],
+            'business': ['reunión', 'proyecto', 'presupuesto', 'cliente', 'venta', 'estrategia'],
+            'support': ['problema', 'ayuda', 'solución', 'ticket', 'incidente', 'resolver'],
+            'casual': ['hola', 'gracias', 'saludos', 'cómo estás', 'charla', 'conversación']
+        }
+        
+        content_lower = content.lower()
+        domain_scores = {}
+        
+        for domain, keywords in domain_keywords.items():
+            score = sum(1 for keyword in keywords if keyword in content_lower)
+            domain_scores[domain] = score
+        
+        return max(domain_scores, key=domain_scores.get) if domain_scores else 'general'
+    
+    def _configure_summary_params(self, summary_type: str, analysis: dict) -> dict:
+        """Configura parámetros específicos para cada tipo"""
+        base_configs = {
+            'extractive': {
+                'max_sentences': 3,
+                'include_keywords': True,
+                'preserve_order': True
+            },
+            'abstractive_detailed': {
+                'max_words': 300,
+                'include_examples': True,
+                'technical_depth': 'high'
+            },
+            'hybrid': {
+                'extractive_ratio': 0.4,
+                'abstractive_ratio': 0.6,
+                'max_words': 200
+            },
+            'solution_focused': {
+                'highlight_solutions': True,
+                'include_steps': True,
+                'format': 'numbered_list'
+            },
+            'decision_focused': {
+                'highlight_decisions': True,
+                'include_action_items': True,
+                'format': 'structured'
+            }
+        }
+        
+        config = base_configs.get(summary_type, base_configs['hybrid']).copy()
+        
+        # Ajustar según análisis
+        if analysis['urgency'] == 'high':
+            config['max_words'] = min(config.get('max_words', 200), 100)
+            config['format'] = 'bullet_points'
+        
+        if analysis['audience'] == 'expert':
+            config['technical_depth'] = 'high'
+            config['include_details'] = True
+        
+        return config
+
+# Ejemplo de uso
+selector = SummaryTypeSelector()
+result = selector.select_summary_type(
+    content="En nuestra reunión de hoy discutimos el bug crítico en la API de pagos...",
+    metadata={"urgency": "high", "participants": ["dev_team", "product_manager"]}
+)
+
+print(f"Tipo recomendado: {result['type']}")
+print(f"Configuración: {result['config']}")
+print(f"Razonamiento: {result['reasoning']}")
+print(f"Confianza: {result['confidence']:.2f}")`}</code></pre>
+            </div>
+          </div>
+
+          <div className="selection-examples">
+            <h4>📝 Ejemplos de Selección</h4>
+            <div className="example-scenarios">
+              <div className="scenario-card">
+                <h5>📞 Soporte al Cliente</h5>
+                <div className="scenario-content">
+                  <p><strong>Entrada:</strong> "El cliente reporta error 500 en checkout. Probé reiniciar el servicio..."</p>
+                  <p><strong>Análisis:</strong> Dominio=soporte, Urgencia=alta, Complejidad=moderada</p>
+                  <p><strong>Selección:</strong> solution_focused</p>
+                  <p><strong>Resultado:</strong> Lista numerada con pasos de solución</p>
+                </div>
+              </div>
+
+              <div className="scenario-card">
+                <h5>💼 Reunión Ejecutiva</h5>
+                <div className="scenario-content">
+                  <p><strong>Entrada:</strong> "Discutimos el Q4 roadmap, aprobamos budget adicional..."</p>
+                  <p><strong>Análisis:</strong> Dominio=business, Audiencia=ejecutiva, Longitud=media</p>
+                  <p><strong>Selección:</strong> decision_focused</p>
+                  <p><strong>Resultado:</strong> Decisiones clave y action items</p>
+                </div>
+              </div>
+
+              <div className="scenario-card">
+                <h5>💬 Chat Casual</h5>
+                <div className="scenario-content">
+                  <p><strong>Entrada:</strong> "Hola, ¿cómo vas con el proyecto? Todo bien por aquí..."</p>
+                  <p><strong>Análisis:</strong> Dominio=casual, Longitud=corta, Complejidad=simple</p>
+                  <p><strong>Selección:</strong> extractive</p>
+                  <p><strong>Resultado:</strong> Frases clave extraídas directamente</p>
+                </div>
+              </div>
+
+              <div className="scenario-card">
+                <h5>📚 Documentación Técnica</h5>
+                <div className="scenario-content">
+                  <p><strong>Entrada:</strong> "La nueva API incluye endpoints para authentication, rate limiting..."</p>
+                  <p><strong>Análisis:</strong> Dominio=técnico, Longitud=larga, Audiencia=desarrolladores</p>
+                  <p><strong>Selección:</strong> abstractive_detailed</p>
+                  <p><strong>Resultado:</strong> Resumen comprehensivo con ejemplos técnicos</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
         <h3>📊 Métricas de Calidad</h3>
         <div className="quality-metrics">
           <div className="metric-card">
@@ -3105,6 +3681,80 @@ for i, ctx in enumerate(relevant_context, 1):
           <div className="optimization-technique">
             <h4>📊 Feedback Learning</h4>
             <p>Aprende de interacciones del usuario para mejorar relevancia</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🔧 Optimización Avanzada de Índices</h3>
+        <p>
+          Los índices son cruciales para el rendimiento del sistema. Una optimización 
+          adecuada puede reducir la latencia de retrieval de segundos a milisegundos:
+        </p>
+
+        <div className="index-optimization-techniques">
+          <div className="technique-card">
+            <h4>⚡ Configuración de FAISS por Tamaño</h4>
+            <div className="size-recommendations">
+              <div className="size-option">
+                <h5>&lt; 10K documentos</h5>
+                <p><strong>IVFFlat:</strong> Precisión máxima, overhead mínimo</p>
+                <code>nlist=100, nprobe=10</code>
+              </div>
+              <div className="size-option">
+                <h5>10K - 100K documentos</h5>
+                <p><strong>IVF_HNSW:</strong> Balance velocidad/precisión</p>
+                <code>nlist=1000, nprobe=20, m=32</code>
+              </div>
+              <div className="size-option">
+                <h5>&gt; 100K documentos</h5>
+                <p><strong>IVF_PQ:</strong> Máxima compresión</p>
+                <code>nlist=4000, nprobe=50, m=8</code>
+              </div>
+            </div>
+          </div>
+
+          <div className="technique-card">
+            <h4>🗂️ Particionado Inteligente</h4>
+            <div className="partitioning-strategies">
+              <div className="strategy">
+                <h5>Por Tipo de Contenido</h5>
+                <ul>
+                  <li>Conversaciones → modelo rápido</li>
+                  <li>Documentos técnicos → modelo preciso</li>
+                  <li>Código → modelo especializado</li>
+                </ul>
+              </div>
+              <div className="strategy">
+                <h5>Por Frecuencia de Acceso</h5>
+                <ul>
+                  <li>Hot data → índice en memoria</li>
+                  <li>Warm data → índice comprimido</li>
+                  <li>Cold data → almacenamiento</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="technique-card">
+            <h4>📊 Monitoreo Automático</h4>
+            <div className="monitoring-metrics">
+              <div className="metric">
+                <h5>Latencia de Búsqueda</h5>
+                <p>Target: &lt; 50ms</p>
+                <div className="alert-trigger">Alerta si &gt; 100ms</div>
+              </div>
+              <div className="metric">
+                <h5>Uso de Memoria</h5>
+                <p>Target: &lt; 80% disponible</p>
+                <div className="alert-trigger">Optimizar si &gt; 90%</div>
+              </div>
+              <div className="metric">
+                <h5>Precisión de Retrieval</h5>
+                <p>Target: &gt; 80%</p>
+                <div className="alert-trigger">Re-entrenar si &lt; 70%</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3928,6 +4578,359 @@ class TestMemorySystemIntegration:
               <li>Configurar alertas de monitoreo</li>
               <li>Establecer políticas de scaling</li>
             </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="lesson-section">
+        <h3>🚀 Deployment en Producción</h3>
+        <p>
+          Desplegar un sistema de memoria en producción requiere consideraciones especiales 
+          de escalabilidad, rendimiento, seguridad y mantenimiento:
+        </p>
+
+        <div className="production-deployment">
+          <div className="deployment-section">
+            <h4>🏗️ Arquitectura de Producción</h4>
+            <div className="architecture-diagram">
+              <div className="architecture-layers">
+                <div className="layer">
+                  <h5>🌐 Load Balancer</h5>
+                  <p>Distribuye cargas entre instancias del servicio</p>
+                  <div className="config-example">
+                    nginx, HAProxy, AWS ALB
+                  </div>
+                </div>
+                
+                <div className="layer">
+                  <h5>🚀 API Gateway</h5>
+                  <p>Autenticación, rate limiting, logging</p>
+                  <div className="config-example">
+                    Kong, Ambassador, AWS API Gateway
+                  </div>
+                </div>
+                
+                <div className="layer">
+                  <h5>💻 Memory Service Cluster</h5>
+                  <p>Múltiples instancias del servicio de memoria</p>
+                  <div className="config-example">
+                    Kubernetes pods, Docker containers
+                  </div>
+                </div>
+                
+                <div className="layer">
+                  <h5>🗄️ Storage Layer</h5>
+                  <p>Bases de datos distribuidas y replicadas</p>
+                  <div className="config-example">
+                    PostgreSQL cluster, Redis cluster, S3
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="deployment-section">
+            <h4>🔧 Configuración de Kubernetes</h4>
+            <div className="k8s-config">
+              <div className="config-file">
+                <h5>deployment.yaml</h5>
+                <div className="code-block">
+                  <pre><code>{`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memory-service
+  labels:
+    app: memory-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: memory-service
+  template:
+    metadata:
+      labels:
+        app: memory-service
+    spec:
+      containers:
+      - name: memory-service
+        image: memory-service:v1.0.0
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: memory-secrets
+              key: database-url
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: memory-secrets
+              key: openai-key
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30`}</code></pre>
+                </div>
+              </div>
+
+              <div className="config-file">
+                <h5>service.yaml</h5>
+                <div className="code-block">
+                  <pre><code>{`apiVersion: v1
+kind: Service
+metadata:
+  name: memory-service-svc
+spec:
+  selector:
+    app: memory-service
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: memory-service-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+spec:
+  rules:
+  - host: memory-api.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: memory-service-svc
+            port:
+              number: 80`}</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="deployment-section">
+            <h4>📊 Monitoreo y Observabilidad</h4>
+            <div className="monitoring-stack">
+              <div className="monitoring-component">
+                <h5>📈 Métricas (Prometheus)</h5>
+                <div className="metrics-list">
+                  <ul>
+                    <li>Latencia de consultas (P50, P95, P99)</li>
+                    <li>Throughput (consultas/segundo)</li>
+                    <li>Uso de memoria y CPU</li>
+                    <li>Tasa de errores</li>
+                    <li>Tamaño de la base de datos</li>
+                    <li>Tiempo de respuesta de embeddings</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="monitoring-component">
+                <h5>📊 Dashboard (Grafana)</h5>
+                <div className="dashboard-panels">
+                  <div className="panel">Sistema: CPU, RAM, Disk</div>
+                  <div className="panel">Aplicación: Latencia, Throughput</div>
+                  <div className="panel">Base de Datos: Conexiones, Queries</div>
+                  <div className="panel">AI Models: Embedding time, API calls</div>
+                </div>
+              </div>
+
+              <div className="monitoring-component">
+                <h5>🚨 Alertas</h5>
+                <div className="alert-rules">
+                  <div className="alert-rule">
+                    <strong>High Latency:</strong> P95 &gt; 500ms por 5 min
+                  </div>
+                  <div className="alert-rule">
+                    <strong>Error Rate:</strong> &gt; 5% por 2 min
+                  </div>
+                  <div className="alert-rule">
+                    <strong>Memory Usage:</strong> &gt; 90% por 3 min
+                  </div>
+                  <div className="alert-rule">
+                    <strong>Disk Space:</strong> &gt; 85% available
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="deployment-section">
+            <h4>🔒 Seguridad en Producción</h4>
+            <div className="security-measures">
+              <div className="security-area">
+                <h5>🔐 Autenticación y Autorización</h5>
+                <ul>
+                  <li>JWT tokens con expiración</li>
+                  <li>Rate limiting por usuario</li>
+                  <li>RBAC (Role-Based Access Control)</li>
+                  <li>API key management</li>
+                </ul>
+              </div>
+
+              <div className="security-area">
+                <h5>🛡️ Protección de Datos</h5>
+                <ul>
+                  <li>Encriptación en tránsito (TLS 1.3)</li>
+                  <li>Encriptación en reposo (AES-256)</li>
+                  <li>Anonimización de datos sensibles</li>
+                  <li>Compliance con GDPR/CCPA</li>
+                </ul>
+              </div>
+
+              <div className="security-area">
+                <h5>🔍 Auditoría y Logging</h5>
+                <ul>
+                  <li>Logs estructurados (JSON)</li>
+                  <li>Audit trail de accesos</li>
+                  <li>Detección de anomalías</li>
+                  <li>Backup de logs centralizado</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="deployment-section">
+            <h4>📈 Estrategias de Escalado</h4>
+            <div className="scaling-strategies">
+              <div className="scaling-type">
+                <h5>↕️ Escalado Vertical</h5>
+                <div className="scaling-details">
+                  <p><strong>Cuándo:</strong> Workload intensivo en memoria/CPU</p>
+                  <p><strong>Cómo:</strong> Aumentar recursos de pod</p>
+                  <div className="scaling-config">
+                    <code>resources.limits.memory: "8Gi"</code><br/>
+                    <code>resources.limits.cpu: "4000m"</code>
+                  </div>
+                </div>
+              </div>
+
+              <div className="scaling-type">
+                <h5>↔️ Escalado Horizontal</h5>
+                <div className="scaling-details">
+                  <p><strong>Cuándo:</strong> Alto volumen de consultas</p>
+                  <p><strong>Cómo:</strong> Aumentar número de réplicas</p>
+                  <div className="scaling-config">
+                    <code>kubectl scale deployment memory-service --replicas=10</code>
+                  </div>
+                </div>
+              </div>
+
+              <div className="scaling-type">
+                <h5>🤖 Auto-escalado</h5>
+                <div className="scaling-details">
+                  <p><strong>HPA:</strong> Basado en CPU/memoria</p>
+                  <p><strong>VPA:</strong> Ajuste automático de recursos</p>
+                  <div className="scaling-config">
+                    <code>minReplicas: 3, maxReplicas: 20</code><br/>
+                    <code>targetCPUUtilizationPercentage: 70</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="deployment-section">
+            <h4>💾 Backup y Recuperación</h4>
+            <div className="backup-strategy">
+              <div className="backup-component">
+                <h5>🗄️ Base de Datos</h5>
+                <ul>
+                  <li>Backup automático cada 6 horas</li>
+                  <li>Retención de 30 días</li>
+                  <li>Replicación multi-región</li>
+                  <li>Point-in-time recovery</li>
+                </ul>
+              </div>
+
+              <div className="backup-component">
+                <h5>🔍 Índices Vectoriales</h5>
+                <ul>
+                  <li>Snapshot diario de índices FAISS</li>
+                  <li>Versionado de embeddings</li>
+                  <li>Backup incremental</li>
+                  <li>Procedimiento de reconstrucción</li>
+                </ul>
+              </div>
+
+              <div className="backup-component">
+                <h5>⚙️ Configuración</h5>
+                <ul>
+                  <li>Git repository para configs</li>
+                  <li>ConfigMaps y Secrets versionados</li>
+                  <li>Infrastructure as Code</li>
+                  <li>Rollback automatizado</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="deployment-section">
+            <h4>🚦 CI/CD Pipeline</h4>
+            <div className="pipeline-stages">
+              <div className="stage">
+                <h5>1️⃣ Desarrollo</h5>
+                <p>Tests unitarios, linting, security scan</p>
+              </div>
+              <div className="stage">
+                <h5>2️⃣ Staging</h5>
+                <p>Tests de integración, performance tests</p>
+              </div>
+              <div className="stage">
+                <h5>3️⃣ Producción</h5>
+                <p>Blue-green deployment, health checks</p>
+              </div>
+            </div>
+            
+            <div className="pipeline-config">
+              <h5>GitHub Actions Example:</h5>
+              <div className="code-block">
+                <pre><code>{`name: Deploy Memory Service
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run tests
+      run: |
+        pip install -r requirements.txt
+        pytest tests/ --cov=src/ --cov-report=xml
+    
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to K8s
+      run: |
+        kubectl apply -f k8s/
+        kubectl rollout status deployment/memory-service`}</code></pre>
+              </div>
+            </div>
           </div>
         </div>
       </div>
